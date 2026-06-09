@@ -9,6 +9,7 @@ export async function POST() {
     return NextResponse.json({ ok: true });
   } catch (error) {
     const prismaError = error as { code?: string; message?: string };
+    console.error("Guest session failed", error);
 
     return NextResponse.json(
       {

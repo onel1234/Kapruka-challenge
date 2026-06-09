@@ -6,6 +6,19 @@ import { FormEvent, useState } from "react";
 
 type AuthMode = "signin" | "signup";
 
+async function readErrorMessage(response: Response, fallback: string) {
+  const text = await response.text();
+
+  if (!text) return fallback;
+
+  try {
+    const data = JSON.parse(text) as { error?: string; code?: string };
+    return data.code ? `${data.error ?? fallback} (${data.code})` : data.error ?? fallback;
+  } catch {
+    return text.slice(0, 180);
+  }
+}
+
 export default function LandingAuth() {
   const [mode, setMode] = useState<AuthMode>("signin");
   const [name, setName] = useState("");
@@ -27,10 +40,9 @@ export default function LandingAuth() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, password }),
         });
-        const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error ?? "Could not create account.");
+          throw new Error(await readErrorMessage(response, "Could not create account."));
         }
       }
 
@@ -61,7 +73,7 @@ export default function LandingAuth() {
       const response = await fetch("/api/guest-session", { method: "POST" });
 
       if (!response.ok) {
-        throw new Error("Could not start guest session.");
+        throw new Error(await readErrorMessage(response, "Could not start guest session."));
       }
 
       window.location.href = "/chat";
