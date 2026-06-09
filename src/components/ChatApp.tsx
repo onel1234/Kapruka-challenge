@@ -286,10 +286,20 @@ export default function Home() {
     [cart],
   );
 
+  async function refreshGuestSession() {
+    const response = await fetch("/api/guest-session", { method: "POST" });
+    return response.ok;
+  }
+
   async function loadConversations() {
     setIsLoadingConversations(true);
     try {
-      const response = await fetch("/api/conversations");
+      let response = await fetch("/api/conversations");
+
+      if (response.status === 401 && !session?.user?.id && (await refreshGuestSession())) {
+        response = await fetch("/api/conversations");
+      }
+
       if (!response.ok) return;
       const data = await response.json();
       setConversations(data.conversations ?? []);
@@ -315,11 +325,18 @@ export default function Home() {
   }, [session?.user?.id]);
 
   async function startNewConversation() {
-    const response = await fetch("/api/conversations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language: selectedLanguage }),
-    });
+    const request = () =>
+      fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: selectedLanguage }),
+      });
+    let response = await request();
+
+    if (response.status === 401 && !session?.user?.id && (await refreshGuestSession())) {
+      response = await request();
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
@@ -385,18 +402,26 @@ export default function Home() {
     setCheckoutError(null);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: content,
-          history: messages,
-          language: selectedLanguage,
-          conversationId,
-          cartSnapshot: cart,
-          responsePreferences,
-        }),
-      });
+      const chatPayload = {
+        message: content,
+        history: messages,
+        language: selectedLanguage,
+        conversationId,
+        cartSnapshot: cart,
+        responsePreferences,
+      };
+      const chatRequest = () =>
+        fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(chatPayload),
+        });
+      let response = await chatRequest();
+
+      if (response.status === 401 && !session?.user?.id && (await refreshGuestSession())) {
+        response = await chatRequest();
+      }
+
       const data = await response.json();
 
       if (!response.ok) {

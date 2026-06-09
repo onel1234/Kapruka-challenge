@@ -18,8 +18,14 @@ export async function getGuestToken() {
 export async function createOrRefreshGuestSession() {
   const cookieStore = await cookies();
   const existingToken = cookieStore.get(GUEST_SESSION_COOKIE)?.value;
-  const token = existingToken ?? randomUUID();
   const expiresAt = guestExpiry();
+  const existingGuestSession = existingToken
+    ? await prisma.guestSession.findUnique({
+        where: { token: existingToken },
+        select: { migratedAt: true },
+      })
+    : null;
+  const token = existingGuestSession?.migratedAt ? randomUUID() : (existingToken ?? randomUUID());
 
   const guestSession = await prisma.guestSession.upsert({
     where: { token },
