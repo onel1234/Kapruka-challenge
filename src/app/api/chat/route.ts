@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { checkDelivery, searchProducts } from "@/lib/kapruka";
+import { checkDelivery, searchProducts, trackOrder } from "@/lib/kapruka";
 import { callOpenRouter, extractJsonObject } from "@/lib/openrouter";
-import type { ChatMessage, Product } from "@/lib/types";
+import type { ChatMessage, OrderTracking, Product } from "@/lib/types";
 import { getActor, getOwnedConversation } from "@/lib/actor";
 import { prisma } from "@/lib/db";
 
@@ -64,6 +64,46 @@ function normalizeLanguage(language: unknown): AppLanguage | null {
 function conversationTitle(message: string) {
   const cleaned = message.replace(/\s+/g, " ").trim();
   return cleaned.length > 52 ? `${cleaned.slice(0, 52)}...` : cleaned || "New gift chat";
+}
+
+function hasTrackingIntent(message: string) {
+  return /\b(track|tracking|status|where.*order|order status|order number)\b/i.test(message);
+}
+
+function extractTrackingOrderNumber(message: string) {
+  if (!hasTrackingIntent(message)) return null;
+  const candidates = message.match(/[a-z0-9][a-z0-9-]{3,39}/gi) ?? [];
+  return candidates.find((candidate) => /\d/.test(candidate) && /[a-z]/i.test(candidate))?.toUpperCase() ?? null;
+}
+
+function buildTrackingReply(tracking: OrderTracking) {
+  const status = tracking.status_display ?? tracking.status ?? "Status unavailable";
+  const orderNumber = tracking.order_number ?? "the order";
+  const deliveryDate = tracking.delivery_date ? ` Delivery date: ${tracking.delivery_date}.` : "";
+  const shippedDate = tracking.shipped_date ? ` Shipped: ${tracking.shipped_date}.` : "";
+  const recipientCity = tracking.recipient?.city ? ` Recipient city: ${tracking.recipient.city}.` : "";
+  const latestProgress = tracking.progress?.length ? tracking.progress[tracking.progress.length - 1] : null;
+  const progress = latestProgress?.step
+    ? ` Latest update: ${latestProgress.step}${latestProgress.timestamp ? ` at ${latestProgress.timestamp}` : ""}.`
+    : "";
+
+  return `Tracking update for ${orderNumber}: ${status}.${deliveryDate}${shippedDate}${recipientCity}${progress}`;
+}
+
+function hasShoppingIntent(message: string) {
+  return /\b(gift|present|buy|send|shop|shopping|find|recommend|suggest|search|order|checkout|cart|deliver|delivery|kapruka|product|item|price|budget|under|rs\.?|lkr|cake|birthday|bday|flower|rose|bouquet|chocolate|choco|hamper|basket|card|perfume|toy|anniversary|romantic|wife|husband|mother|mom|amma|father|dad|sister|brother|friend|teacher|boss|colombo|kandy|galle|jaffna|negombo|matara|kurunegala|anuradhapura|today|tomorrow)\b/i.test(message);
+}
+
+function buildOutOfScopeReply(language: AppLanguage | null) {
+  if (language === "sinhala") {
+    return "මම Kapruka තෑගි සෙවීම, delivery check කිරීම, checkout link සෑදීම, සහ paid order tracking සඳහායි. තෑග්ග කාටද, අවස්ථාව, budget එක, delivery city එක කියන්න; මම හොඳ විකල්ප සොයලා දෙන්නම්.";
+  }
+
+  if (language === "tamil") {
+    return "நான் Kapruka பரிசு தேடல், delivery check, checkout link உருவாக்குதல், paid order tracking ஆகியவற்றுக்காக இருக்கிறேன். பரிசு யாருக்காக, நிகழ்வு, budget, delivery city சொல்லுங்கள்; பொருத்தமான விருப்பங்களைத் தேடித் தருகிறேன்.";
+  }
+
+  return "I am Kavi, your Kapruka gift concierge. I can help with gift ideas, product search, delivery checks, checkout links, and paid order tracking. Tell me who the gift is for, the occasion, budget, and delivery city.";
 }
 
 async function resolveConversation(params: {
@@ -305,6 +345,90 @@ export async function POST(request: Request) {
         content: message,
       },
     });
+
+    const trackingOrderNumber = extractTrackingOrderNumber(message);
+
+    if (trackingOrderNumber) {
+      const reply = trackingOrderNumber.startsWith("ORD-")
+        ? "That looks like the checkout reference from the pay link. To track delivery, use the Kapruka order number from the paid order confirmation email or order complete page."
+        : await trackOrder(trackingOrderNumber)
+            .then((tracking) =>
+              typeof tracking === "string"
+                ? tracking.replace(/^Error:\s*/i, "").trim() || "I could not find tracking for that order number."
+                : buildTrackingReply(tracking as OrderTracking),
+            )
+            .catch((error) => (error instanceof Error ? error.message : "Order tracking failed."));
+
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: "assistant",
+          content: reply,
+          metadata: {
+            order_tracking: {
+              order_number: trackingOrderNumber,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        reply,
+        products: [],
+        delivery: null,
+        plan: { language: selectedLanguage ?? "english" },
+        conversationId: conversation.id,
+      });
+    }
+
+    if (hasTrackingIntent(message)) {
+      const reply =
+        "Please send the Kapruka order number from your paid order confirmation email or order complete page. It is different from the checkout ref shown before payment.";
+
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: "assistant",
+          content: reply,
+          metadata: {
+            order_tracking: {
+              missing_order_number: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        reply,
+        products: [],
+        delivery: null,
+        plan: { language: selectedLanguage ?? "english" },
+        conversationId: conversation.id,
+      });
+    }
+
+    if (!hasShoppingIntent(message)) {
+      const reply = buildOutOfScopeReply(selectedLanguage);
+
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: "assistant",
+          content: reply,
+          metadata: {
+            out_of_scope: true,
+          },
+        },
+      });
+
+      return NextResponse.json({
+        reply,
+        products: [],
+        delivery: null,
+        plan: { language: selectedLanguage ?? "english" },
+        conversationId: conversation.id,
+      });
+    }
 
     const plan = await createShoppingPlan(message, history, selectedLanguage);
     const fallback = fallbackPlan(message);

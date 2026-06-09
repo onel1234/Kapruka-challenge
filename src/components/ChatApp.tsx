@@ -9,7 +9,9 @@ import {
   MapPin,
   MessageCircle,
   Minus,
+  PackageCheck,
   Plus,
+  RefreshCw,
   LogOut,
   Search,
   Send,
@@ -20,7 +22,7 @@ import {
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { CartItem, ChatMessage, DeliveryCheck, Product } from "@/lib/types";
+import type { CartItem, ChatMessage, DeliveryCheck, OrderTracking, Product } from "@/lib/types";
 
 type AppLanguage = "english" | "sinhala" | "tamil";
 
@@ -200,6 +202,14 @@ function normalizeCheckoutSuccess(value: unknown): CheckoutSuccess | null {
   return findCheckoutCandidate(value);
 }
 
+function trackingStatusLabel(tracking: OrderTracking) {
+  return tracking.status_display ?? tracking.status ?? "Status unavailable";
+}
+
+function trackingDateLabel(value?: string | null) {
+  return value && value.trim() ? value : "Not available yet";
+}
+
 export default function Home() {
   const { data: session } = useSession();
   const [selectedLanguage, setSelectedLanguage] = useState<AppLanguage>("english");
@@ -232,6 +242,10 @@ export default function Home() {
   const [checkoutSuccess, setCheckoutSuccess] = useState<CheckoutSuccess | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [orderNumber, setOrderNumber] = useState("");
+  const [orderTracking, setOrderTracking] = useState<OrderTracking | null>(null);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [isTrackingOrder, setIsTrackingOrder] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const subtotal = useMemo(
@@ -259,7 +273,11 @@ export default function Home() {
   }
 
   useEffect(() => {
-    void importGuestAndLoadConversations();
+    const timeoutId = window.setTimeout(() => {
+      void importGuestAndLoadConversations();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
@@ -486,6 +504,42 @@ export default function Home() {
       setCheckoutError(error instanceof Error ? error.message : "Checkout failed.");
     } finally {
       setIsCheckingOut(false);
+    }
+  }
+
+  async function submitOrderTracking() {
+    const trimmedOrderNumber = orderNumber.trim();
+
+    setTrackingError(null);
+    setOrderTracking(null);
+
+    if (!trimmedOrderNumber) {
+      setTrackingError("Enter the paid Kapruka order number from your confirmation email.");
+      return;
+    }
+
+    setIsTrackingOrder(true);
+
+    try {
+      const response = await fetch("/api/orders/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderNumber: trimmedOrderNumber }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Could not track this order.");
+      }
+
+      setOrderTracking(data.tracking ?? null);
+      if (data.tracking?.order_number) {
+        setOrderNumber(data.tracking.order_number);
+      }
+    } catch (error) {
+      setTrackingError(error instanceof Error ? error.message : "Order tracking failed.");
+    } finally {
+      setIsTrackingOrder(false);
     }
   }
 
@@ -859,6 +913,103 @@ export default function Home() {
                 </p>
               ) : null}
             </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitOrderTracking();
+              }}
+              className="mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-4"
+            >
+              <div className="mb-4 flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
+                  <PackageCheck size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#f2c678]">Track paid order</p>
+                  <p className="mt-1 text-xs leading-5 text-white/60">
+                    Use the Kapruka order number from the payment confirmation, not the checkout ref.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={orderNumber}
+                  onChange={(event) => setOrderNumber(event.target.value)}
+                  className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-3 text-sm uppercase outline-none focus:border-[#f2c678]"
+                  placeholder="VIMP34456CB2"
+                />
+                <button
+                  type="submit"
+                  disabled={isTrackingOrder}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f2c678] text-[#1d1a16] transition hover:bg-[#ffd98d] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Track order"
+                >
+                  {isTrackingOrder ? <Loader2 size={17} className="animate-spin" /> : <RefreshCw size={17} />}
+                </button>
+              </div>
+
+              {trackingError ? (
+                <p className="mt-3 rounded-lg border border-[#ff8f8f]/30 bg-[#7a1f1f]/40 p-3 text-sm text-[#ffd0d0]">
+                  {trackingError}
+                </p>
+              ) : null}
+
+              {orderTracking ? (
+                <div className="mt-4 rounded-lg border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-white/55">Current status</p>
+                      <p className="mt-1 text-lg font-semibold text-white">{trackingStatusLabel(orderTracking)}</p>
+                    </div>
+                    <span className="rounded-md bg-[#1f7a55]/25 px-2 py-1 text-xs font-semibold text-[#9ff0ca]">
+                      {orderTracking.order_number ?? orderNumber.trim().toUpperCase()}
+                    </span>
+                  </div>
+
+                  <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <dt className="text-white/45">Delivery date</dt>
+                      <dd className="mt-1 font-semibold text-white">{trackingDateLabel(orderTracking.delivery_date)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-white/45">Amount</dt>
+                      <dd className="mt-1 font-semibold text-white">{orderTracking.amount ?? "Not available"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-white/45">Recipient</dt>
+                      <dd className="mt-1 truncate font-semibold text-white">
+                        {orderTracking.recipient?.name ?? "Not available"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-white/45">City</dt>
+                      <dd className="mt-1 truncate font-semibold text-white">
+                        {orderTracking.recipient?.city ?? "Not available"}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {orderTracking.progress?.length ? (
+                    <div className="mt-4 border-t border-white/10 pt-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">Progress</p>
+                      <div className="mt-3 space-y-2">
+                        {orderTracking.progress.slice(0, 5).map((step, index) => (
+                          <div key={`${step.step ?? "step"}-${index}`} className="flex gap-2 text-xs">
+                            <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f2c678]" />
+                            <div>
+                              <p className="font-semibold text-white">{step.step ?? "Update"}</p>
+                              {step.timestamp ? <p className="mt-0.5 text-white/50">{step.timestamp}</p> : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </form>
           </div>
         </aside>
       </div>
@@ -905,13 +1056,16 @@ export default function Home() {
 
             <div className="mt-4 rounded-lg bg-[#f8efe0] p-3 text-xs leading-5 text-[#6b5d4c]">
               <p>
-                Order ref: <span className="font-semibold text-[#1d1a16]">{checkoutSuccess.order_ref}</span>
+                Checkout ref: <span className="font-semibold text-[#1d1a16]">{checkoutSuccess.order_ref}</span>
               </p>
               <p>
                 Link expires:{" "}
                 <span className="font-semibold text-[#1d1a16]">
                   {new Date(checkoutSuccess.expires_at).toLocaleString("en-LK")}
                 </span>
+              </p>
+              <p className="mt-2">
+                After payment, use the Kapruka order number from the confirmation email to track delivery.
               </p>
             </div>
 

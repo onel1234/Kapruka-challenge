@@ -68,3 +68,37 @@ export type CheckoutPayload = {
   gift_message?: string | null;
   currency?: string;
 };
+
+export type OrderTracking = {
+  order_number?: string;
+  pnref?: string;
+  status?: string;
+  status_display?: string;
+  order_date?: string;
+  delivery_date?: string;
+  shipped_date?: string | null;
+  amount?: string;
+  payment_method?: string;
+  comments?: string | null;
+  recipient?: {
+    name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+  };
+  greeting_message?: string | null;
+  special_instructions?: string | null;
+  progress?: Array<{
+    step?: string;
+    timestamp?: string;
+  }>;
+  live_tracking_available?: boolean;
+  has_delivery_video?: boolean;
+  has_delivery_photo?: boolean;
+  items?: Array<{
+    product_id?: string;
+    name?: string;
+    quantity?: number;
+    selling_price?: number;
+  }>;
+};

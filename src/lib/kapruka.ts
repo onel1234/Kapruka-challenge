@@ -136,3 +136,19 @@ export async function createOrder(payload: CheckoutPayload) {
     return parseToolResult(result);
   });
 }
+
+export async function trackOrder(orderNumber: string) {
+  return withKaprukaClient(async (client) => {
+    const result = (await client.callTool({
+      name: "kapruka_track_order",
+      arguments: {
+        params: {
+          order_number: orderNumber,
+          response_format: "json",
+        },
+      },
+    })) as ToolResult;
+
+    return parseToolResult(result);
+  });
+}
