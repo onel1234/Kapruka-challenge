@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
-type AppLanguage = "english" | "sinhala" | "tamil" | "tanglish";
+type AppLanguage = "english" | "sinhala" | "singlish" | "tamil" | "tanglish";
 
 type ShoppingPlan = {
   language?: AppLanguage;
@@ -49,6 +49,16 @@ const QUERY_HINTS: Array<[RegExp, string[]]> = [
   [/ළම|බබා/u, ["toy", "birthday"]],
   [/අම්ම|තාත්ත/u, ["birthday", "chocolate", "flowers"]],
   [/තෑග|තැග|ගිෆ්ට්/u, ["birthday", "chocolate", "flowers"]],
+  [/\b(upandin|upandina|birthday|bday|cake|kek)\b/i, ["birthday", "cake"]],
+  [/\b(mal|rosa|rose|flower|bouquet|mal\s*pokura)\b/i, ["rose", "flowers"]],
+  [/\b(choco|chocolate|sweets?|chokalat)\b/i, ["chocolate"]],
+  [/\b(thagi|thegi|thaagi|taggak|gift\s*ekak|present\s*ekak)\b/i, ["birthday", "chocolate", "flowers"]],
+  [/\b(amma|ammata|thaththa|thathta|akk[a]?|nangi|aiya|ayya|malli|yaluwa|yaluwata)\b/i, [
+    "birthday",
+    "chocolate",
+    "flowers",
+  ]],
+  [/\b(lama|lamai|baba|podda|podi)\b/i, ["toy", "birthday"]],
   [/cake|birthday|bday|උපන්|upandin/i, ["birthday", "cake"]],
   [/flower|rose|bouquet|මල්|mal/i, ["rose", "flowers"]],
   [/choco|sweet|candy|චොක/i, ["chocolate"]],
@@ -62,7 +72,7 @@ const QUERY_HINTS: Array<[RegExp, string[]]> = [
 
 function inferSituation(message: string) {
   if (
-    /break\s*up|broke\s*up|fight|sorry|apolog|make it up|forgive|pirinju|pirinjitten|sandai|mannippu|samadanam|மன்னிப்பு|சண்டை|பிரிவு/iu.test(
+    /break\s*up|broke\s*up|fight|sorry|apolog|make it up|forgive|randu|tharaha|samawa|sorry\s*kiyanna|dala\s*giya|pirinuna|pirinju|pirinjitten|sandai|mannippu|samadanam|மன்னிப்பு|சண்டை|பிரிவு/iu.test(
       message,
     )
   ) {
@@ -75,7 +85,7 @@ function inferSituation(message: string) {
   }
 
   if (
-    /anniversary|romantic|love|wife|girlfriend|boyfriend|husband|kadhal|kadhali|kadhalan|manaivi|kanavan|காதல்|காதலி|காதலன்|மனைவி|கணவர்/iu.test(
+    /anniversary|romantic|love|wife|girlfriend|boyfriend|husband|adare|aadare|pemwathiya|pemwatha|birinda|swamiya|kadhal|kadhali|kadhalan|manaivi|kanavan|காதல்|காதலி|காதலன்|மனைவி|கணவர்/iu.test(
       message,
     )
   ) {
@@ -87,7 +97,7 @@ function inferSituation(message: string) {
     };
   }
 
-  if (/sympathy|condolence|funeral|loss|passed away|anuthabam|அனுதாபம்|இறப்பு/iu.test(message)) {
+  if (/sympathy|condolence|funeral|loss|passed away|maranaya|nathi\s*wuna|anuthabam|அனுதாபம்|இறப்பு/iu.test(message)) {
     return {
       situation: "sympathy gesture",
       emotional_tone: "sympathy" as const,
@@ -96,7 +106,7 @@ function inferSituation(message: string) {
     };
   }
 
-  if (/thank|thanks|appreciat|nandri|நன்றி/iu.test(message)) {
+  if (/thank|thanks|appreciat|sthuthi|istuti|bohoma\s*sthuthi|nandri|நன்றி/iu.test(message)) {
     return {
       situation: "thank you gift",
       emotional_tone: "gratitude" as const,
@@ -128,13 +138,19 @@ function fallbackPlan(message: string): ShoppingPlan {
     message.match(/(?:rs\.?|lkr|රු\.?|රුපියල්)\s*([\d,]+)/i) ??
     message.match(/(?:under|below|අඩු|යටතේ)\s*(?:rs\.?|lkr|රු\.?|රුපියල්)?\s*([\d,]+)/i) ??
     message.match(/([\d,]+)\s*(?:ට)?\s*(?:අඩු|යටතේ|අඩුවෙන්)/i);
+  const singlishBudgetMatch =
+    message.match(/(?:rs\.?|lkr|rupiyal|rupees?)\s*([\d,]+)/i) ??
+    message.match(
+      /(?:under|below|less than|aduwen|yata|yatin|athule|watina|wage)\s*(?:rs\.?|lkr|rupiyal|rupees?)?\s*([\d,]+)/i,
+    ) ??
+    message.match(/([\d,]+)\s*(?:ta|kata)?\s*(?:aduwen|yata|yatin|athule|wage)/i);
   const tamilBudgetMatch =
     message.match(/(?:rs\.?|lkr|ரூ\.?|ரூபாய்|rooba|rupa|rupees?)\s*([\d,]+)/i) ??
     message.match(
       /(?:under|below|less than|கீழ்|குறைவாக|kulla|keela)\s*(?:rs\.?|lkr|ரூ\.?|ரூபாய்|rooba|rupa|rupees?)?\s*([\d,]+)/i,
     ) ??
     message.match(/([\d,]+)\s*(?:க்கு|ku)?\s*(?:கீழ்|குறைவாக|kulla|keela)/i);
-  const resolvedBudgetMatch = budgetMatch ?? tamilBudgetMatch;
+  const resolvedBudgetMatch = budgetMatch ?? singlishBudgetMatch ?? tamilBudgetMatch;
   const cityMatch = message.match(/\b(colombo\s?\d{0,2}|kandy|galle|jaffna|negombo|matara|kurunegala|anuradhapura)\b/i);
   const sinhalaCity =
     /මහනුවර|නුවර/.test(message)
@@ -146,6 +162,22 @@ function fallbackPlan(message: string): ShoppingPlan {
           : /යාපනය/.test(message)
             ? "Jaffna"
             : null;
+  const singlishCity =
+    /\b(?:colombo|kolamba|kolombo)\s*(?:ta|walata|wala)?\b/i.test(message)
+      ? "Colombo"
+      : /\b(?:kandy|nuwara|mahanuwara)\s*(?:ta|walata|wala)?\b/i.test(message)
+        ? "Kandy"
+        : /\b(?:galle|galla)\s*(?:ta|walata|wala)?\b/i.test(message)
+          ? "Galle"
+          : /\b(?:jaffna|yapanaya)\s*(?:ta|walata|wala)?\b/i.test(message)
+            ? "Jaffna"
+            : /\b(?:negombo|meegamuwa)\s*(?:ta|walata|wala)?\b/i.test(message)
+              ? "Negombo"
+              : /\b(?:matara)\s*(?:ta|walata|wala)?\b/i.test(message)
+                ? "Matara"
+                : /\b(?:kurunegala)\s*(?:ta|walata|wala)?\b/i.test(message)
+                  ? "Kurunegala"
+                  : null;
   const tamilCity =
     /கண்டி/.test(message)
       ? "Kandy"
@@ -179,7 +211,7 @@ function fallbackPlan(message: string): ShoppingPlan {
   return {
     search_queries: Array.from(searchQueries).slice(0, 3),
     max_price: resolvedBudgetMatch ? Number(resolvedBudgetMatch[1].replace(/,/g, "")) : null,
-    city: cityMatch?.[1] ?? sinhalaCity ?? tamilCity ?? tanglishCity,
+    city: cityMatch?.[1] ?? sinhalaCity ?? singlishCity ?? tamilCity ?? tanglishCity,
     language: detectMessageLanguage(message) ?? "english",
     situation: situation.situation,
     emotional_tone: situation.emotional_tone,
@@ -219,8 +251,71 @@ const TANGLISH_WORDS = new Set([
   "venum",
 ]);
 
+const SINGLISH_WORDS = new Set([
+  "adare",
+  "aduwen",
+  "aiya",
+  "akkata",
+  "amma",
+  "ammata",
+  "ane",
+  "ayubowan",
+  "baba",
+  "balanna",
+  "denna",
+  "eka",
+  "ekak",
+  "ewanna",
+  "eyata",
+  "ganna",
+  "hari",
+  "hoda",
+  "hoyala",
+  "istuti",
+  "kaatada",
+  "kata",
+  "kawda",
+  "kiyanna",
+  "kohomada",
+  "mage",
+  "malli",
+  "mama",
+  "mata",
+  "mokakda",
+  "nangi",
+  "ona",
+  "one",
+  "onee",
+  "oni",
+  "oya",
+  "oyage",
+  "oyata",
+  "podda",
+  "podi",
+  "puluwan",
+  "randu",
+  "rosa",
+  "rupiyal",
+  "samawa",
+  "sthuthi",
+  "ta",
+  "taggak",
+  "thagi",
+  "thaththa",
+  "thegi",
+  "upandin",
+  "upandina",
+  "walata",
+  "yawanna",
+  "yata",
+]);
+
 function normalizeLanguage(language: unknown): AppLanguage | null {
-  return language === "english" || language === "sinhala" || language === "tamil" || language === "tanglish"
+  return language === "english" ||
+    language === "sinhala" ||
+    language === "singlish" ||
+    language === "tamil" ||
+    language === "tanglish"
     ? language
     : null;
 }
@@ -238,9 +333,25 @@ function detectTanglish(message: string) {
   );
 }
 
+function detectSinglish(message: string) {
+  const normalized = message.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
+  const words = normalized.match(/[a-z]+/g) ?? [];
+  const hits = words.filter((word) => SINGLISH_WORDS.has(word)).length;
+
+  if (hits >= 2) return true;
+  if (/\b(?:mata|mage|mama|oyata|eyata|ammata|thaththata|akkata|nangita|aiyata|mallita|yaluwata)\b/i.test(normalized)) {
+    return true;
+  }
+
+  return /\b(?:kohomada|mokakda|kawda|kaatada|kiyanna|puluwan|hoyala|yawanna|ewanna|denna|ganna|karanna|ona|onee|oni|aduwen|rupiyal|thagi|thegi|taggak|samawa|sthuthi|ayubowan)\b/i.test(
+    normalized,
+  );
+}
+
 function detectMessageLanguage(message: string): AppLanguage | null {
   if (/[\u0D80-\u0DFF]/.test(message)) return "sinhala";
   if (/[\u0B80-\u0BFF]/.test(message)) return "tamil";
+  if (detectSinglish(message)) return "singlish";
   if (detectTanglish(message)) return "tanglish";
   return null;
 }
@@ -266,6 +377,10 @@ function normalizeResponsePreferences(value: unknown): ResponsePreferences {
 function languageInstruction(language: ShoppingPlan["language"]) {
   if ((language as string | null) === "sinhala") {
     return "Reply in natural Sinhala using Sinhala script. Product names, product IDs, brand names, prices, and URLs may remain exactly as provided.";
+  }
+
+  if (language === "singlish") {
+    return "Reply in friendly Singlish: Sinhala meaning in Latin letters mixed naturally with simple English. Do not use Sinhala script unless the user used Sinhala script. Product names, product IDs, brand names, prices, and URLs may remain exactly as provided.";
   }
 
   if ((language as string | null) === "tamil") {
@@ -327,7 +442,8 @@ function conversationTitle(message: string) {
 
 function hasTrackingIntent(message: string) {
   return (
-    /\b(track|tracking|status|where.*order|order status|order number|track panna|order enga|enga.*order)\b/i.test(message) ||
+    /\b(track|tracking|status|where.*order|order status|order number|track panna|order enga|enga.*order|order eka koheda|order eke status|order number eka)\b/i.test(message) ||
+    /ඕඩර්|ඇණවුම|ට්‍රැක්|තත්ත්වය|කොහෙද/u.test(message) ||
     /டிராக்|ஆர்டர்.*(?:நிலை|எங்கே)|(?:நிலை|எங்கே).*ஆர்டர்/u.test(message)
   );
 }
@@ -357,6 +473,10 @@ function buildMissingTrackingReply(language: AppLanguage | null) {
     return "Paid order confirmation email එකේ හෝ order complete page එකේ තියෙන Kapruka order number එක එවන්න. ඒක payment කලින් පෙන්වන checkout ref එකට වෙනස්.";
   }
 
+  if (language === "singlish") {
+    return "Paid order confirmation email eke hari order complete page eke thiyena Kapruka order number eka ewanna. Eka payment kalin pennana checkout ref ekata wenas.";
+  }
+
   if (language === "tamil") {
     return "Paid order confirmation email அல்லது order complete page-ல் இருக்கும் Kapruka order number-ஐ அனுப்புங்கள். அது payment முன் காட்டும் checkout ref-இலிருந்து வேறுபடும்.";
   }
@@ -373,6 +493,14 @@ function hasShoppingIntent(message: string) {
     /\b(gift|present|buy|send|shop|shopping|find|recommend|suggest|search|order|checkout|cart|deliver|delivery|kapruka|product|item|price|budget|under|rs\.?|lkr|cake|birthday|bday|flower|rose|bouquet|chocolate|choco|hamper|basket|card|perfume|toy|anniversary|romantic|wife|husband|mother|mom|amma|father|dad|sister|brother|friend|teacher|boss|colombo|kandy|galle|jaffna|negombo|matara|kurunegala|anuradhapura|today|tomorrow)\b/i.test(message);
   const sinhalaIntent =
     /තෑග|තැග|ගිෆ්ට්|අම්ම|තාත්ත|අක්ක|නංගි|අයිය|මල්|රෝස|කේක්|චොකලට්|හැම්පර්|උපන්|උපන්දින|සංවත්සර|රුපියල්|රු\.?|අඩු|අඩුවෙන්|යටතේ|මිල|බජට්|යව|එව|බෙදා|කොළඹ|මහනුවර|නුවර|ගාල්ල|යාපනය|මීගමුව|මාතර|කුරුණෑගල|අනුරාධපුර|ඕන|ඔන|හොය|සොය/u.test(message);
+  const singlishIntent =
+    /\b(thagi|thegi|taggak|gift\s*ekak|present\s*ekak|mal|rosa|cake|kek|choco|chocolate|hamper|upandin|upandina|birthday|ammata|thaththata|akkata|nangita|aiyata|mallita|yaluwata|yawanna|ewanna|denna|ganna|hoyala|delivery|budget|rupiyal|rs\.?|lkr|aduwen|yata|yatin|athule|colombo|kolamba|nuwara|mahanuwara|kandy|galla|yapanaya|meegamuwa)\b/i.test(
+      message,
+    ) ||
+    (detectSinglish(message) &&
+      /\b(gift|present|cake|kek|mal|rosa|flower|rose|choco|chocolate|hamper|card|delivery|budget|rs\.?|lkr|rupiyal|aduwen|yata|yawanna|ewanna|hoyala|denna|ganna|ona|one|onee|oni)\b/i.test(
+        message,
+      ));
   const tamilIntent =
     /பரிசு|கிப்ட்|அம்மா|அப்பா|அக்கா|அண்ணா|தங்கை|தம்பி|மலர்|பூ|ரோஜா|கேக்|சாக்லேட்|ஹாம்பர்|பிறந்தநாள்|பிறந்த நாள்|திருமண நாள்|ரூபாய்|ரூ\.?|கீழ்|குறைவாக|விலை|பட்ஜெட்|அனுப்பு|டெலிவரி|கொழும்பு|கண்டி|காலி|யாழ்ப்பாணம்|வேண்டும்|தேவை|தேடு/u.test(
       message,
@@ -382,7 +510,7 @@ function hasShoppingIntent(message: string) {
       message,
     );
 
-  return englishIntent || sinhalaIntent || tamilIntent || tanglishIntent;
+  return englishIntent || sinhalaIntent || singlishIntent || tamilIntent || tanglishIntent;
 }
 
 function buildOutOfScopeReply(language: AppLanguage | null, preferences: ResponsePreferences) {
@@ -390,6 +518,10 @@ function buildOutOfScopeReply(language: AppLanguage | null, preferences: Respons
 
   if ((language as AppLanguage | null) === "sinhala") {
     return `මම Kapruka තෑගි සෙවීම, delivery check කිරීම, checkout link සෑදීම, සහ paid order tracking සඳහායි. තෑග්ග කාටද, අවස්ථාව, budget එක, delivery city එක කියන්න; මම හොඳ විකල්ප සොයලා දෙන්නම්.${emoji}`;
+  }
+
+  if (language === "singlish") {
+    return `Mama Kavi, Kapruka gift concierge. Gift ideas, product search, delivery check, checkout link hadana eka, paid order tracking walata help karanna puluwan. Gift eka kaatada, occasion eka, budget eka, delivery city eka kiyanna; mama hondama options hoyala dennam.${emoji}`;
   }
 
   if ((language as AppLanguage | null) === "tamil") {
@@ -455,7 +587,7 @@ async function createShoppingPlan(message: string, history: ChatMessage[], reply
             latest_user_message: message,
             recent_history: recentHistory,
             output_shape: {
-              language: "english | sinhala | tamil | tanglish",
+              language: "english | sinhala | singlish | tamil | tanglish",
               search_queries: ["specific catalog search terms"],
               max_price: "number or null",
               min_price: "number or null",
@@ -544,6 +676,18 @@ function summarizeDelivery(delivery: unknown, language: ShoppingPlan["language"]
     return deliveryObject.reason ? "තෝරාගත් දිනය සඳහා බෙදාහැරීමේ සටහනක් තිබේ." : null;
   }
 
+  if (language === "singlish") {
+    if (deliveryObject.available) {
+      return `Delivery available. Fee eka: ${deliveryObject.currency ?? "LKR"} ${deliveryObject.rate ?? "TBC"}.`;
+    }
+
+    if (deliveryObject.next_available_date) {
+      return `Next available delivery date eka: ${deliveryObject.next_available_date}.`;
+    }
+
+    return deliveryObject.reason ? "Select karapu date ekata delivery note ekak thiyenawa." : null;
+  }
+
   if ((language as ShoppingPlan["language"]) === "tamil") {
     if (deliveryObject.available) {
       return `விநியோகம் கிடைக்கும். கட்டணம்: ${deliveryObject.currency ?? "LKR"} ${deliveryObject.rate ?? "TBC"}.`;
@@ -626,6 +770,10 @@ function buildGroundedReply(params: {
       return `"${searchedFor}" සඳහා Kapruka හි හොඳ in-stock ගැළපීමක් තවම හමු වුණේ නැහැ. අවස්ථාව, ලබන්නා, budget එක, සහ delivery city එක කියන්න; මම තවත් නිවැරදි සෙවීමක් කරලා දෙන්නම්.${emoji}`;
     }
 
+    if (language === "singlish") {
+      return `"${searchedFor}" walata Kapruka eke strong in-stock match ekak thawama hambune naha. Occasion eka, gift eka kaatada, budget eka, delivery city eka kiyanna; mama thawa sharp search ekak karala dennam.${emoji}`;
+    }
+
     if ((language as ShoppingPlan["language"]) === "tamil") {
       return `"${searchedFor}" என்பதற்கு Kapruka-வில் நல்ல in-stock பொருத்தம் இன்னும் கிடைக்கவில்லை. நிகழ்வு, பெறுபவர், budget, delivery city சொல்லுங்கள்; இன்னும் துல்லியமாக தேடுகிறேன்.${emoji}`;
     }
@@ -651,25 +799,32 @@ function buildGroundedReply(params: {
     .join("\n");
   const deliveryText = deliveryLine ? `\n\nDelivery note: ${deliveryLine}` : "";
   const addonText = plan.suggested_addons?.length ? `\n\nUseful add-ons: ${plan.suggested_addons.join(", ")}.` : "";
-  const situationText = plan.situation ? `\n\nSituation: ${plan.situation}.` : "";
-  const conciergeText = `\n\nConcierge angle: ${conciergeMove(plan)}`;
 
   if (language === "sinhala") {
     const sinhalaDeliveryText = deliveryLine ? `\n\nබෙදාහැරීම: ${deliveryLine}` : "";
-    return `ඔබේ ඉල්ලීමට ගැළපෙන Kapruka තේරීම් කිහිපයක් හමු වුණා${emoji}\n\n${productLines}${sinhalaDeliveryText}${addonText}${situationText}${conciergeText}\n\nමගේ පළමු යෝජනාව: ${picks[0].name}. මෙයින් එකක් හෝ කිහිපයක් කරත්තයට එකතු කරමුද?`;
+    const sinhalaAddonText = plan.suggested_addons?.length ? `\n\nතව එකතු කළොත් හොඳ දේවල්: ${plan.suggested_addons.join(", ")}.` : "";
+    return `ඔබේ ඉල්ලීමට ගැළපෙන Kapruka තේරීම් කිහිපයක් හමු වුණා${emoji}\n\n${productLines}${sinhalaDeliveryText}${sinhalaAddonText}\n\nමගේ පළමු යෝජනාව: ${picks[0].name}. මෙයින් එකක් හෝ කිහිපයක් කරත්තයට එකතු කරමුද?`;
+  }
+
+  if (language === "singlish") {
+    const singlishDeliveryText = deliveryLine ? `\n\nDelivery: ${deliveryLine}` : "";
+    const singlishAddonText = plan.suggested_addons?.length ? `\n\nSmall add-ons hodata set wenawa: ${plan.suggested_addons.join(", ")}.` : "";
+    return `Oyage request ekata match wena real Kapruka options tikak hambuna${emoji}\n\n${productLines}${singlishDeliveryText}${singlishAddonText}\n\nMage first pick eka: ${picks[0].name}. Me wage ekak hari dekak cart ekata add karala complete gift ekak hadamuda?`;
   }
 
   if (language === "tanglish") {
     const tanglishDeliveryText = deliveryLine ? `\n\nDelivery: ${deliveryLine}` : "";
-    return `Unga request-ku match aana real Kapruka options kidaichirukku${emoji}\n\n${productLines}${tanglishDeliveryText}${addonText}${situationText}${conciergeText}\n\nEn first pick: ${picks[0].name}. Idhula one or two cart-la add pannalama? Naan gift-a complete panna next step help panren.`;
+    const tanglishAddonText = plan.suggested_addons?.length ? `\n\nSmall add-ons nalla irukkum: ${plan.suggested_addons.join(", ")}.` : "";
+    return `Unga request-ku match aana real Kapruka options kidaichirukku${emoji}\n\n${productLines}${tanglishDeliveryText}${tanglishAddonText}\n\nEn first pick: ${picks[0].name}. Idhula one or two cart-la add pannalama? Naan gift-a complete panna next step help panren.`;
   }
 
   if (language === "tamil") {
     const tamilDeliveryText = deliveryLine ? `\n\nவிநியோகம்: ${deliveryLine}` : "";
-    return `உங்கள் கோரிக்கைக்கு பொருத்தமான Kapruka தேர்வுகள் கிடைத்தன${emoji}\n\n${productLines}${tamilDeliveryText}${addonText}${situationText}${conciergeText}\n\nஎன் முதல் பரிந்துரை: ${picks[0].name}. இதில் ஒன்றையோ சிலவற்றையோ வண்டியில் சேர்க்கலாமா?`;
+    const tamilAddonText = plan.suggested_addons?.length ? `\n\nசிறிய add-ons: ${plan.suggested_addons.join(", ")}.` : "";
+    return `உங்கள் கோரிக்கைக்கு பொருத்தமான Kapruka தேர்வுகள் கிடைத்தன${emoji}\n\n${productLines}${tamilDeliveryText}${tamilAddonText}\n\nஎன் முதல் பரிந்துரை: ${picks[0].name}. இதில் ஒன்றையோ சிலவற்றையோ வண்டியில் சேர்க்கலாமா?`;
   }
 
-  return `I found some real Kapruka options that fit the request${emoji}\n\n${productLines}${deliveryText}${addonText}${situationText}${conciergeText}\n\nMy first pick is ${picks[0].name}. Add one or two to the cart and I will help you turn it into a complete gift.`;
+  return `I found some real Kapruka options that fit the request${emoji}\n\n${productLines}${deliveryText}${addonText}\n\nMy first pick is ${picks[0].name}. Add one or two to the cart and I will help you turn it into a complete gift.`;
 }
 
 export async function POST(request: Request) {

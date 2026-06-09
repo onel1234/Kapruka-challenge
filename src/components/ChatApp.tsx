@@ -25,7 +25,7 @@ import { signOut, useSession } from "next-auth/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { CartItem, ChatMessage, DeliveryCheck, OrderTracking, Product, ResponsePreferences } from "@/lib/types";
 
-type AppLanguage = "english" | "sinhala" | "tamil" | "tanglish";
+type AppLanguage = "english" | "sinhala" | "singlish" | "tamil" | "tanglish";
 
 type CheckoutSuccess = {
   summary: {
@@ -52,6 +52,7 @@ const STARTERS = [
   "Birthday gift for my amma in Kandy under Rs. 10,000",
   "Anniversary surprise with flowers and chocolate for Colombo tomorrow",
   "මට අම්මාට birthday gift එකක් ඕනේ",
+  "Mata ammata mal gift ekak one Rs. 10,000 aduwen",
   "Amma ku pookal venum Kandy ku Rs. 10,000 kulla",
   "Build a cute gift bundle for a sister who loves chocolate",
 ];
@@ -59,6 +60,7 @@ const STARTERS = [
 const LANGUAGE_OPTIONS: Array<{ value: AppLanguage; label: string }> = [
   { value: "english", label: "English" },
   { value: "sinhala", label: "සිංහල" },
+  { value: "singlish", label: "Singlish" },
   { value: "tamil", label: "தமிழ்" },
   { value: "tanglish", label: "Tanglish" },
 ];
@@ -87,6 +89,8 @@ const WELCOME_BY_LANGUAGE: Record<AppLanguage, string> = {
     "Ayubowan. I am Kavi, your Kapruka gift concierge. Tell me who the gift is for, the occasion, budget, and delivery city. I will curate options and help you check out.",
   sinhala:
     "ආයුබෝවන්. මම කවි, ඔබේ Kapruka තෑගි සහායකයා. තෑග්ග කාටද, අවස්ථාව, අයවැය සහ බෙදාහැරීමේ නගරය කියන්න. මම සුදුසු විකල්ප තෝරා දෙන්නම්.",
+  singlish:
+    "Ayubowan. Mama Kavi, oyage Kapruka gift concierge. Gift eka kaatada, occasion eka, budget eka, delivery city eka kiyanna; mama hondama options hoyala checkout wenakan help karannam.",
   tamil:
     "வணக்கம். நான் கவி, உங்கள் Kapruka பரிசு உதவியாளர். பரிசு யாருக்காக, நிகழ்வு, செலவு வரம்பு, விநியோக நகரம் ஆகியவற்றை சொல்லுங்கள். பொருத்தமான தேர்வுகளை நான் பரிந்துரைக்கிறேன்.",
   tanglish:
@@ -411,7 +415,12 @@ export default function Home() {
       setDelivery(data.delivery ?? null);
       await loadConversations();
 
-      if (data.plan?.language === "sinhala" || data.plan?.language === "tamil" || data.plan?.language === "tanglish") {
+      if (
+        data.plan?.language === "sinhala" ||
+        data.plan?.language === "singlish" ||
+        data.plan?.language === "tamil" ||
+        data.plan?.language === "tanglish"
+      ) {
         setSelectedLanguage(data.plan.language);
       }
 
@@ -593,7 +602,7 @@ export default function Home() {
             </div>
             <div className="hidden items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144] md:flex">
               <Sparkles size={16} className="text-[#cc2f2f]" />
-              Sinhala, Tamil, Tanglish, checkout-ready
+              Multilingual, checkout-ready
             </div>
             <label className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144]">
               <span className="hidden font-medium sm:inline">Language</span>
