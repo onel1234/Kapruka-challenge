@@ -1,0 +1,70 @@
+export type ChatRole = "user" | "assistant";
+
+export type ChatMessage = {
+  id: string;
+  role: ChatRole;
+  content: string;
+  createdAt: string;
+};
+
+export type Product = {
+  id: string;
+  name: string;
+  summary: string;
+  price: {
+    amount: number;
+    currency: string;
+  };
+  compare_at_price?: {
+    amount: number;
+    currency: string;
+  } | null;
+  in_stock: boolean;
+  stock_level?: string | null;
+  image_url?: string | null;
+  category?: {
+    id?: string;
+    name?: string;
+    slug?: string;
+  } | null;
+  rating?: number | null;
+  ships_internationally?: boolean;
+  url?: string;
+};
+
+export type CartItem = {
+  product: Product;
+  quantity: number;
+  icingText?: string;
+};
+
+export type DeliveryCheck = {
+  city?: string;
+  delivery_date?: string | null;
+  raw: unknown;
+};
+
+export type CheckoutPayload = {
+  cart: Array<{
+    product_id: string;
+    quantity: number;
+    icing_text?: string | null;
+  }>;
+  recipient: {
+    name: string;
+    phone: string;
+  };
+  delivery: {
+    address: string;
+    city: string;
+    location_type?: string;
+    date: string;
+    instructions?: string | null;
+  };
+  sender: {
+    name: string;
+    anonymous?: boolean;
+  };
+  gift_message?: string | null;
+  currency?: string;
+};
