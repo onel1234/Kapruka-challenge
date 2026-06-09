@@ -15,6 +15,7 @@ import {
   LogOut,
   Search,
   Send,
+  SlidersHorizontal,
   ShoppingBag,
   Sparkles,
   Trash2,
@@ -22,7 +23,7 @@ import {
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { CartItem, ChatMessage, DeliveryCheck, OrderTracking, Product } from "@/lib/types";
+import type { CartItem, ChatMessage, DeliveryCheck, OrderTracking, Product, ResponsePreferences } from "@/lib/types";
 
 type AppLanguage = "english" | "sinhala" | "tamil";
 
@@ -58,6 +59,25 @@ const LANGUAGE_OPTIONS: Array<{ value: AppLanguage; label: string }> = [
   { value: "english", label: "English" },
   { value: "sinhala", label: "සිංහල" },
   { value: "tamil", label: "தமிழ்" },
+];
+
+const TONE_OPTIONS: Array<{ value: ResponsePreferences["tone"]; label: string }> = [
+  { value: "warm", label: "Warm" },
+  { value: "professional", label: "Professional" },
+  { value: "playful", label: "Playful" },
+  { value: "concise", label: "Concise" },
+];
+
+const EMOJI_OPTIONS: Array<{ value: ResponsePreferences["emojiMode"]; label: string }> = [
+  { value: "none", label: "No emojis" },
+  { value: "light", label: "Light" },
+  { value: "expressive", label: "Expressive" },
+];
+
+const DETAIL_OPTIONS: Array<{ value: ResponsePreferences["detailLevel"]; label: string }> = [
+  { value: "short", label: "Short" },
+  { value: "balanced", label: "Balanced" },
+  { value: "detailed", label: "Detailed" },
 ];
 
 const WELCOME_BY_LANGUAGE: Record<AppLanguage, string> = {
@@ -246,6 +266,11 @@ export default function Home() {
   const [orderTracking, setOrderTracking] = useState<OrderTracking | null>(null);
   const [trackingError, setTrackingError] = useState<string | null>(null);
   const [isTrackingOrder, setIsTrackingOrder] = useState(false);
+  const [responsePreferences, setResponsePreferences] = useState<ResponsePreferences>({
+    tone: "warm",
+    emojiMode: "none",
+    detailLevel: "balanced",
+  });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const subtotal = useMemo(
@@ -361,6 +386,7 @@ export default function Home() {
           language: selectedLanguage,
           conversationId,
           cartSnapshot: cart,
+          responsePreferences,
         }),
       });
       const data = await response.json();
@@ -380,6 +406,10 @@ export default function Home() {
       setProducts(data.products ?? []);
       setDelivery(data.delivery ?? null);
       await loadConversations();
+
+      if (data.plan?.language === "sinhala" || data.plan?.language === "tamil") {
+        setSelectedLanguage(data.plan.language);
+      }
 
       if (data.plan?.city) {
         setCheckout((current) => ({ ...current, city: data.plan.city }));
@@ -771,6 +801,84 @@ export default function Home() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-5">
+            <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
+                  <SlidersHorizontal size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#f2c678]">Assistant style</p>
+                  <p className="mt-1 text-xs text-white/55">
+                    {TONE_OPTIONS.find((option) => option.value === responsePreferences.tone)?.label} tone
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                <label className="grid gap-1 text-xs text-white/55">
+                  Tone
+                  <select
+                    value={responsePreferences.tone}
+                    onChange={(event) =>
+                      setResponsePreferences((current) => ({
+                        ...current,
+                        tone: event.target.value as ResponsePreferences["tone"],
+                      }))
+                    }
+                    className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                  >
+                    {TONE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="grid gap-1 text-xs text-white/55">
+                    Emoji use
+                    <select
+                      value={responsePreferences.emojiMode}
+                      onChange={(event) =>
+                        setResponsePreferences((current) => ({
+                          ...current,
+                          emojiMode: event.target.value as ResponsePreferences["emojiMode"],
+                        }))
+                      }
+                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                    >
+                      {EMOJI_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="grid gap-1 text-xs text-white/55">
+                    Detail
+                    <select
+                      value={responsePreferences.detailLevel}
+                      onChange={(event) =>
+                        setResponsePreferences((current) => ({
+                          ...current,
+                          detailLevel: event.target.value as ResponsePreferences["detailLevel"],
+                        }))
+                      }
+                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                    >
+                      {DETAIL_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+
             {cart.length ? (
               <div className="space-y-3">
                 {cart.map((item) => (

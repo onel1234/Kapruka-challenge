@@ -7,6 +7,16 @@ export type ChatMessage = {
   createdAt: string;
 };
 
+export type ResponseTone = "warm" | "professional" | "playful" | "concise";
+export type EmojiMode = "none" | "light" | "expressive";
+export type DetailLevel = "short" | "balanced" | "detailed";
+
+export type ResponsePreferences = {
+  tone: ResponseTone;
+  emojiMode: EmojiMode;
+  detailLevel: DetailLevel;
+};
+
 export type Product = {
   id: string;
   name: string;
