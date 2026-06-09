@@ -2,7 +2,7 @@
 
 import { Gift, Loader2, Lock, Mail, Sparkles, User } from "lucide-react";
 import { signIn } from "next-auth/react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type AuthMode = "signin" | "signup";
 
@@ -27,6 +27,18 @@ export default function LandingAuth() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+
+  useEffect(() => {
+    const authError = new URLSearchParams(window.location.search).get("error");
+
+    if (authError) {
+      const timeoutId = window.setTimeout(() => {
+        setError(`Authentication failed (${authError}). Please try again.`);
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, []);
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

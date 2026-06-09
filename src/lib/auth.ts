@@ -7,8 +7,9 @@ import { prisma } from "@/lib/db";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
   pages: {
     signIn: "/",
@@ -55,12 +56,24 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.id = user.id;
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = String(token.id);
       }
 
       return session;
+    },
+  },
+  logger: {
+    error(code, metadata) {
+      console.error("NextAuth error", code, metadata);
     },
   },
 };
