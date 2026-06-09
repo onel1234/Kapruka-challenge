@@ -7,10 +7,10 @@ import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
-type AppLanguage = "english" | "sinhala" | "tamil";
+type AppLanguage = "english" | "sinhala" | "tamil" | "tanglish";
 
 type ShoppingPlan = {
-  language?: AppLanguage | "tanglish";
+  language?: AppLanguage;
   search_queries?: string[];
   max_price?: number | null;
   min_price?: number | null;
@@ -31,6 +31,18 @@ const DEFAULT_RESPONSE_PREFERENCES: ResponsePreferences = {
 };
 
 const QUERY_HINTS: Array<[RegExp, string[]]> = [
+  [/கேக்|பிறந்தநாள்|பிறந்த நாள்/u, ["birthday", "cake"]],
+  [/மலர்|பூ|ரோஜா/u, ["rose", "flowers"]],
+  [/சாக்லேட்|சாக்லட்/u, ["chocolate"]],
+  [/அம்மா|அப்பா/u, ["birthday", "chocolate", "flowers"]],
+  [/பரிசு|கிப்ட்/u, ["birthday", "chocolate", "flowers"]],
+  [/காதல்|மனைவி|கணவர்/u, ["rose", "chocolate"]],
+  [/\b(pirandha|pirantha|birthday|bday|cake|kek)\b/i, ["birthday", "cake"]],
+  [/\b(pookal|poo|malar|roja|rose|flower|bouquet)\b/i, ["rose", "flowers"]],
+  [/\b(chocolate|choco|saaklet|sweet)\b/i, ["chocolate"]],
+  [/\b(parisu|giftu|gift|present)\b/i, ["birthday", "chocolate", "flowers"]],
+  [/\b(amma|appa|annai|thambi|thangachi|akka|anna)\b/i, ["birthday", "chocolate", "flowers"]],
+  [/\b(kadhal|kadhali|kadhalan|manaivi|kanavan)\b/i, ["rose", "chocolate"]],
   [/කේක්|උපන්|උපන්දින/u, ["birthday", "cake"]],
   [/මල්|රෝස/u, ["rose", "flowers"]],
   [/චොකලට්|චොකෝ/u, ["chocolate"]],
@@ -49,7 +61,11 @@ const QUERY_HINTS: Array<[RegExp, string[]]> = [
 ];
 
 function inferSituation(message: string) {
-  if (/break\s*up|broke\s*up|fight|sorry|apolog|make it up|forgive/i.test(message)) {
+  if (
+    /break\s*up|broke\s*up|fight|sorry|apolog|make it up|forgive|pirinju|pirinjitten|sandai|mannippu|samadanam|மன்னிப்பு|சண்டை|பிரிவு/iu.test(
+      message,
+    )
+  ) {
     return {
       situation: "relationship repair",
       emotional_tone: "apology" as const,
@@ -58,7 +74,11 @@ function inferSituation(message: string) {
     };
   }
 
-  if (/anniversary|romantic|love|wife|girlfriend|boyfriend|husband/i.test(message)) {
+  if (
+    /anniversary|romantic|love|wife|girlfriend|boyfriend|husband|kadhal|kadhali|kadhalan|manaivi|kanavan|காதல்|காதலி|காதலன்|மனைவி|கணவர்/iu.test(
+      message,
+    )
+  ) {
     return {
       situation: "romantic gift",
       emotional_tone: "romantic" as const,
@@ -67,7 +87,7 @@ function inferSituation(message: string) {
     };
   }
 
-  if (/sympathy|condolence|funeral|loss|passed away/i.test(message)) {
+  if (/sympathy|condolence|funeral|loss|passed away|anuthabam|அனுதாபம்|இறப்பு/iu.test(message)) {
     return {
       situation: "sympathy gesture",
       emotional_tone: "sympathy" as const,
@@ -76,7 +96,7 @@ function inferSituation(message: string) {
     };
   }
 
-  if (/thank|thanks|appreciat/i.test(message)) {
+  if (/thank|thanks|appreciat|nandri|நன்றி/iu.test(message)) {
     return {
       situation: "thank you gift",
       emotional_tone: "gratitude" as const,
@@ -108,6 +128,13 @@ function fallbackPlan(message: string): ShoppingPlan {
     message.match(/(?:rs\.?|lkr|රු\.?|රුපියල්)\s*([\d,]+)/i) ??
     message.match(/(?:under|below|අඩු|යටතේ)\s*(?:rs\.?|lkr|රු\.?|රුපියල්)?\s*([\d,]+)/i) ??
     message.match(/([\d,]+)\s*(?:ට)?\s*(?:අඩු|යටතේ|අඩුවෙන්)/i);
+  const tamilBudgetMatch =
+    message.match(/(?:rs\.?|lkr|ரூ\.?|ரூபாய்|rooba|rupa|rupees?)\s*([\d,]+)/i) ??
+    message.match(
+      /(?:under|below|less than|கீழ்|குறைவாக|kulla|keela)\s*(?:rs\.?|lkr|ரூ\.?|ரூபாய்|rooba|rupa|rupees?)?\s*([\d,]+)/i,
+    ) ??
+    message.match(/([\d,]+)\s*(?:க்கு|ku)?\s*(?:கீழ்|குறைவாக|kulla|keela)/i);
+  const resolvedBudgetMatch = budgetMatch ?? tamilBudgetMatch;
   const cityMatch = message.match(/\b(colombo\s?\d{0,2}|kandy|galle|jaffna|negombo|matara|kurunegala|anuradhapura)\b/i);
   const sinhalaCity =
     /මහනුවර|නුවර/.test(message)
@@ -119,6 +146,30 @@ function fallbackPlan(message: string): ShoppingPlan {
           : /යාපනය/.test(message)
             ? "Jaffna"
             : null;
+  const tamilCity =
+    /கண்டி/.test(message)
+      ? "Kandy"
+      : /கொழும்பு/.test(message)
+        ? "Colombo"
+        : /காலி/.test(message)
+          ? "Galle"
+          : /யாழ்ப்பாணம்|யாழ்/.test(message)
+            ? "Jaffna"
+            : /நீர்கொழும்பு/.test(message)
+              ? "Negombo"
+              : null;
+  const tanglishCity =
+    /\bcolombo\s*(?:ku|kku)?\b/i.test(message)
+      ? "Colombo"
+      : /\bkandy\s*(?:ku|kku)?\b/i.test(message)
+        ? "Kandy"
+        : /\bgalle\s*(?:ku|kku)?\b/i.test(message)
+          ? "Galle"
+          : /\bjaffna\s*(?:ku|kku)?\b/i.test(message)
+            ? "Jaffna"
+            : /\bnegombo\s*(?:ku|kku)?\b/i.test(message)
+              ? "Negombo"
+              : null;
 
   if (searchQueries.size === 0) {
     searchQueries.add("birthday");
@@ -127,22 +178,70 @@ function fallbackPlan(message: string): ShoppingPlan {
 
   return {
     search_queries: Array.from(searchQueries).slice(0, 3),
-    max_price: budgetMatch ? Number(budgetMatch[1].replace(/,/g, "")) : null,
-    city: cityMatch?.[1] ?? sinhalaCity,
-    language: /[\u0D80-\u0DFF]/.test(message) ? "sinhala" : "english",
+    max_price: resolvedBudgetMatch ? Number(resolvedBudgetMatch[1].replace(/,/g, "")) : null,
+    city: cityMatch?.[1] ?? sinhalaCity ?? tamilCity ?? tanglishCity,
+    language: detectMessageLanguage(message) ?? "english",
     situation: situation.situation,
     emotional_tone: situation.emotional_tone,
     suggested_addons: situation.suggested_addons,
   };
 }
 
+const TANGLISH_WORDS = new Set([
+  "akka",
+  "amma",
+  "annai",
+  "anna",
+  "appa",
+  "cake",
+  "giftu",
+  "kadhal",
+  "kadhali",
+  "kadhalan",
+  "kanavan",
+  "keela",
+  "kulla",
+  "malar",
+  "manaivi",
+  "nandri",
+  "parisu",
+  "pirandha",
+  "pirantha",
+  "poo",
+  "pookal",
+  "rooba",
+  "rupa",
+  "saaklet",
+  "sandai",
+  "thambi",
+  "thangachi",
+  "thevai",
+  "venum",
+]);
+
 function normalizeLanguage(language: unknown): AppLanguage | null {
-  return language === "english" || language === "sinhala" || language === "tamil" ? language : null;
+  return language === "english" || language === "sinhala" || language === "tamil" || language === "tanglish"
+    ? language
+    : null;
+}
+
+function detectTanglish(message: string) {
+  const normalized = message.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
+  const words = normalized.match(/[a-z]+/g) ?? [];
+  const hits = words.filter((word) => TANGLISH_WORDS.has(word)).length;
+
+  if (hits >= 2) return true;
+  if (/\b(?:amma|appa|akka|anna|thambi|thangachi)\s*(?:ku|kku)\b/i.test(normalized)) return true;
+
+  return /\b(?:enakku|ennaku|venum|thevai|parisu|pookal|malar|rooba|rupa|kulla|keela|pirandha|pirantha|anupu|anuppu|amma(?:ku|kku)|appa(?:ku|kku)|akka(?:ku|kku)|anna(?:ku|kku))\b/i.test(
+    normalized,
+  );
 }
 
 function detectMessageLanguage(message: string): AppLanguage | null {
   if (/[\u0D80-\u0DFF]/.test(message)) return "sinhala";
   if (/[\u0B80-\u0BFF]/.test(message)) return "tamil";
+  if (detectTanglish(message)) return "tanglish";
   return null;
 }
 
@@ -174,7 +273,7 @@ function languageInstruction(language: ShoppingPlan["language"]) {
   }
 
   if (language === "tanglish") {
-    return "Reply in friendly Sinhala-English transliteration only if the user used transliterated Sinhala.";
+    return "Reply in friendly Tanglish: Tamil meaning in Latin letters mixed naturally with simple English. Do not use Tamil script unless the user used Tamil script. Product names, product IDs, brand names, prices, and URLs may remain exactly as provided.";
   }
 
   return "Reply in English.";
@@ -227,7 +326,10 @@ function conversationTitle(message: string) {
 }
 
 function hasTrackingIntent(message: string) {
-  return /\b(track|tracking|status|where.*order|order status|order number)\b/i.test(message);
+  return (
+    /\b(track|tracking|status|where.*order|order status|order number|track panna|order enga|enga.*order)\b/i.test(message) ||
+    /டிராக்|ஆர்டர்.*(?:நிலை|எங்கே)|(?:நிலை|எங்கே).*ஆர்டர்/u.test(message)
+  );
 }
 
 function extractTrackingOrderNumber(message: string) {
@@ -250,13 +352,37 @@ function buildTrackingReply(tracking: OrderTracking) {
   return `Tracking update for ${orderNumber}: ${status}.${deliveryDate}${shippedDate}${recipientCity}${progress}`;
 }
 
+function buildMissingTrackingReply(language: AppLanguage | null) {
+  if (language === "sinhala") {
+    return "Paid order confirmation email එකේ හෝ order complete page එකේ තියෙන Kapruka order number එක එවන්න. ඒක payment කලින් පෙන්වන checkout ref එකට වෙනස්.";
+  }
+
+  if (language === "tamil") {
+    return "Paid order confirmation email அல்லது order complete page-ல் இருக்கும் Kapruka order number-ஐ அனுப்புங்கள். அது payment முன் காட்டும் checkout ref-இலிருந்து வேறுபடும்.";
+  }
+
+  if (language === "tanglish") {
+    return "Paid order confirmation email illa order complete page-la irukkura Kapruka order number-a anuppunga. Adhu payment-ku munnaadi varra checkout ref vida different.";
+  }
+
+  return "Please send the Kapruka order number from your paid order confirmation email or order complete page. It is different from the checkout ref shown before payment.";
+}
+
 function hasShoppingIntent(message: string) {
   const englishIntent =
     /\b(gift|present|buy|send|shop|shopping|find|recommend|suggest|search|order|checkout|cart|deliver|delivery|kapruka|product|item|price|budget|under|rs\.?|lkr|cake|birthday|bday|flower|rose|bouquet|chocolate|choco|hamper|basket|card|perfume|toy|anniversary|romantic|wife|husband|mother|mom|amma|father|dad|sister|brother|friend|teacher|boss|colombo|kandy|galle|jaffna|negombo|matara|kurunegala|anuradhapura|today|tomorrow)\b/i.test(message);
   const sinhalaIntent =
     /තෑග|තැග|ගිෆ්ට්|අම්ම|තාත්ත|අක්ක|නංගි|අයිය|මල්|රෝස|කේක්|චොකලට්|හැම්පර්|උපන්|උපන්දින|සංවත්සර|රුපියල්|රු\.?|අඩු|අඩුවෙන්|යටතේ|මිල|බජට්|යව|එව|බෙදා|කොළඹ|මහනුවර|නුවර|ගාල්ල|යාපනය|මීගමුව|මාතර|කුරුණෑගල|අනුරාධපුර|ඕන|ඔන|හොය|සොය/u.test(message);
+  const tamilIntent =
+    /பரிசு|கிப்ட்|அம்மா|அப்பா|அக்கா|அண்ணா|தங்கை|தம்பி|மலர்|பூ|ரோஜா|கேக்|சாக்லேட்|ஹாம்பர்|பிறந்தநாள்|பிறந்த நாள்|திருமண நாள்|ரூபாய்|ரூ\.?|கீழ்|குறைவாக|விலை|பட்ஜெட்|அனுப்பு|டெலிவரி|கொழும்பு|கண்டி|காலி|யாழ்ப்பாணம்|வேண்டும்|தேவை|தேடு/u.test(
+      message,
+    );
+  const tanglishIntent =
+    /\b(parisu|giftu|venum|thevai|pookal|poo|malar|roja|saaklet|pirandha|pirantha|kulla|keela|rooba|rupa|anupu|anuppu|delivery|amma|appa|akka|anna|thambi|thangachi|kadhal|kadhali|kadhalan|manaivi|kanavan)\b/i.test(
+      message,
+    );
 
-  return englishIntent || sinhalaIntent;
+  return englishIntent || sinhalaIntent || tamilIntent || tanglishIntent;
 }
 
 function buildOutOfScopeReply(language: AppLanguage | null, preferences: ResponsePreferences) {
@@ -268,6 +394,10 @@ function buildOutOfScopeReply(language: AppLanguage | null, preferences: Respons
 
   if ((language as AppLanguage | null) === "tamil") {
     return `நான் Kapruka பரிசு தேடல், delivery check, checkout link உருவாக்குதல், paid order tracking ஆகியவற்றுக்காக இருக்கிறேன். பரிசு யாருக்காக, நிகழ்வு, budget, delivery city சொல்லுங்கள்; பொருத்தமான விருப்பங்களைத் தேடித் தருகிறேன்.${emoji}`;
+  }
+
+  if (language === "tanglish") {
+    return `Naan Kavi, unga Kapruka gift concierge. Gift ideas, product search, delivery check, checkout link, paid order tracking ellathukkum help panren. Gift yaarukku, occasion, budget, delivery city sollunga; suitable options thedi tharen.${emoji}`;
   }
   if ((language as ShoppingPlan["language"]) === "sinhala") {
     return "මම Kapruka තෑගි සෙවීම, delivery check කිරීම, checkout link සෑදීම, සහ paid order tracking සඳහායි. තෑග්ග කාටද, අවස්ථාව, budget එක, delivery city එක කියන්න; මම හොඳ විකල්ප සොයලා දෙන්නම්.";
@@ -325,7 +455,7 @@ async function createShoppingPlan(message: string, history: ChatMessage[], reply
             latest_user_message: message,
             recent_history: recentHistory,
             output_shape: {
-              language: "english | sinhala | tanglish",
+              language: "english | sinhala | tamil | tanglish",
               search_queries: ["specific catalog search terms"],
               max_price: "number or null",
               min_price: "number or null",
@@ -353,10 +483,12 @@ async function createShoppingPlan(message: string, history: ChatMessage[], reply
       .map((query) => query.trim())
       .filter((query) => query.length >= 3);
 
+    const parsedLanguage = normalizeLanguage(parsed?.language);
+
     return {
       ...fallback,
       ...parsed,
-      language: forcedLanguage ?? parsed?.language ?? fallback.language,
+      language: forcedLanguage ?? parsedLanguage ?? fallback.language,
       search_queries: Array.from(new Set(combinedQueries)).slice(0, 4),
     };
   } catch {
@@ -424,6 +556,18 @@ function summarizeDelivery(delivery: unknown, language: ShoppingPlan["language"]
     return deliveryObject.reason ? "தேர்ந்தெடுத்த தேதிக்கான விநியோக குறிப்பு உள்ளது." : null;
   }
 
+  if (language === "tanglish") {
+    if (deliveryObject.available) {
+      return `Delivery available. Fee: ${deliveryObject.currency ?? "LKR"} ${deliveryObject.rate ?? "TBC"}.`;
+    }
+
+    if (deliveryObject.next_available_date) {
+      return `Next available delivery date: ${deliveryObject.next_available_date}.`;
+    }
+
+    return deliveryObject.reason ? "Selected date-ku delivery note irukku." : null;
+  }
+
   if ((language as ShoppingPlan["language"]) === "sinhala") {
     if (deliveryObject.available) {
       return `බෙදාහැරීම ලබා ගත හැක. ගාස්තුව: ${deliveryObject.currency ?? "LKR"} ${deliveryObject.rate ?? "TBC"}.`;
@@ -478,7 +622,7 @@ function buildGroundedReply(params: {
   if (!products.length) {
     const searchedFor = queries.join(", ");
 
-    if ((language as ShoppingPlan["language"]) === "sinhala" || (language as ShoppingPlan["language"]) === "tanglish") {
+    if ((language as ShoppingPlan["language"]) === "sinhala") {
       return `"${searchedFor}" සඳහා Kapruka හි හොඳ in-stock ගැළපීමක් තවම හමු වුණේ නැහැ. අවස්ථාව, ලබන්නා, budget එක, සහ delivery city එක කියන්න; මම තවත් නිවැරදි සෙවීමක් කරලා දෙන්නම්.${emoji}`;
     }
 
@@ -486,7 +630,11 @@ function buildGroundedReply(params: {
       return `"${searchedFor}" என்பதற்கு Kapruka-வில் நல்ல in-stock பொருத்தம் இன்னும் கிடைக்கவில்லை. நிகழ்வு, பெறுபவர், budget, delivery city சொல்லுங்கள்; இன்னும் துல்லியமாக தேடுகிறேன்.${emoji}`;
     }
 
-    if (language === "sinhala" || language === "tanglish") {
+    if (language === "tanglish") {
+      return `"${searchedFor}" ku Kapruka-la strong in-stock match innu kidaikkala. Occasion, yaarukku gift, budget, delivery city sollunga; naan sharper-a thedi tharen.${emoji}`;
+    }
+
+    if (language === "sinhala") {
       return `"${searchedFor}" සඳහා Kapruka හි හොඳ තොගයේ ඇති ගැළපීමක් හමු වුණේ නැහැ. අවස්ථාව, ලබන්නා, අයවැය සහ බෙදාහැරීමේ නගරය කියන්න; මම තව නිවැරදි සෙවීමක් කරන්නම්.`;
     }
 
@@ -506,9 +654,14 @@ function buildGroundedReply(params: {
   const situationText = plan.situation ? `\n\nSituation: ${plan.situation}.` : "";
   const conciergeText = `\n\nConcierge angle: ${conciergeMove(plan)}`;
 
-  if (language === "sinhala" || language === "tanglish") {
+  if (language === "sinhala") {
     const sinhalaDeliveryText = deliveryLine ? `\n\nබෙදාහැරීම: ${deliveryLine}` : "";
     return `ඔබේ ඉල්ලීමට ගැළපෙන Kapruka තේරීම් කිහිපයක් හමු වුණා${emoji}\n\n${productLines}${sinhalaDeliveryText}${addonText}${situationText}${conciergeText}\n\nමගේ පළමු යෝජනාව: ${picks[0].name}. මෙයින් එකක් හෝ කිහිපයක් කරත්තයට එකතු කරමුද?`;
+  }
+
+  if (language === "tanglish") {
+    const tanglishDeliveryText = deliveryLine ? `\n\nDelivery: ${deliveryLine}` : "";
+    return `Unga request-ku match aana real Kapruka options kidaichirukku${emoji}\n\n${productLines}${tanglishDeliveryText}${addonText}${situationText}${conciergeText}\n\nEn first pick: ${picks[0].name}. Idhula one or two cart-la add pannalama? Naan gift-a complete panna next step help panren.`;
   }
 
   if (language === "tamil") {
@@ -568,7 +721,7 @@ export async function POST(request: Request) {
 
     if (trackingOrderNumber) {
       const reply = trackingOrderNumber.startsWith("ORD-")
-        ? "That looks like the checkout reference from the pay link. To track delivery, use the Kapruka order number from the paid order confirmation email or order complete page."
+        ? buildMissingTrackingReply(replyLanguage)
         : await trackOrder(trackingOrderNumber)
             .then((tracking) =>
               typeof tracking === "string"
@@ -600,8 +753,7 @@ export async function POST(request: Request) {
     }
 
     if (hasTrackingIntent(message)) {
-      const reply =
-        "Please send the Kapruka order number from your paid order confirmation email or order complete page. It is different from the checkout ref shown before payment.";
+      const reply = buildMissingTrackingReply(replyLanguage);
 
       await prisma.message.create({
         data: {
