@@ -435,9 +435,133 @@ function conciergeMove(plan: ShoppingPlan) {
   return "Be a helpful concierge: briefly interpret the situation, make one recommendation, and give the user a clear next step.";
 }
 
-function conversationTitle(message: string) {
+const DEFAULT_CONVERSATION_TITLE = "New gift chat";
+
+function legacyConversationTitle(message: string) {
   const cleaned = message.replace(/\s+/g, " ").trim();
-  return cleaned.length > 52 ? `${cleaned.slice(0, 52)}...` : cleaned || "New gift chat";
+  return cleaned.length > 52 ? `${cleaned.slice(0, 52)}...` : cleaned || DEFAULT_CONVERSATION_TITLE;
+}
+
+function compactTitle(title: string) {
+  const cleaned = title.replace(/\s+/g, " ").trim();
+  return cleaned.length > 48 ? `${cleaned.slice(0, 45).trim()}...` : cleaned;
+}
+
+function titleCase(value: string) {
+  const cleaned = value.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+
+  return cleaned
+    .split(" ")
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (["for", "in", "to", "and", "with"].includes(lower)) return lower;
+      return `${lower.slice(0, 1).toUpperCase()}${lower.slice(1)}`;
+    })
+    .join(" ");
+}
+
+function titleRecipient(message: string, plan?: ShoppingPlan) {
+  const planned = typeof plan?.recipient === "string" ? plan.recipient.trim() : "";
+  if (planned && !/^(recipient|person|someone|user)$/i.test(planned)) return titleCase(planned);
+
+  const recipientRules: Array<[RegExp, string]> = [
+    [/\b(girlfriend|gf|pemwathiya|kadhali)\b|පෙම්වතිය|காதலி/iu, "girlfriend"],
+    [/\b(boyfriend|bf|pemwatha|kadhalan)\b|පෙම්වතා|காதலன்/iu, "boyfriend"],
+    [/\b(wife|birinda|manaivi)\b|බිරිඳ|මගේ නෝනා|மனைவி/iu, "wife"],
+    [/\b(husband|swamiya|kanavan)\b|ස්වාමි|සැමියා|கணவர்/iu, "husband"],
+    [/\b(amma|ammata|mom|mother)\b|අම්ම|அம்மா/iu, "Amma"],
+    [/\b(thaththa|thathta|dad|father|appa)\b|තාත්ත|அப்பா/iu, "Thaththa"],
+    [/\b(akka|akkata|sister)\b|අක්ක|அக்கா/iu, "sister"],
+    [/\b(nangi|nangita|sister)\b|නංගි|தங்கை/iu, "sister"],
+    [/\b(aiya|ayya|aiyata|brother|anna)\b|අයිය|அண்ணா/iu, "brother"],
+    [/\b(malli|mallita|brother|thambi)\b|මල්ලි|தம்பி/iu, "brother"],
+    [/\b(friend|yaluwa|yaluwata)\b|යාලු|நண்ப/iu, "friend"],
+    [/\b(teacher|guruthumi|sir|madam)\b|ගුරු|ஆசிரிய/iu, "teacher"],
+    [/\b(boss|manager)\b/iu, "boss"],
+    [/\b(kid|child|baby|baba|lama|podda|podi)\b|ළම|බබා|குழந்தை/iu, "child"],
+  ];
+
+  return recipientRules.find(([pattern]) => pattern.test(message))?.[1] ?? null;
+}
+
+function titleOccasion(message: string, plan?: ShoppingPlan) {
+  const planned = typeof plan?.occasion === "string" ? plan.occasion.trim() : "";
+  if (planned) return titleCase(planned);
+
+  if (/break\s*up|broke\s*up|sorry|apolog|forgive|randu|tharaha|samawa|sorry\s*kiyanna|pirinju|மன்னிப்பு|சண்டை|பிரிவு/iu.test(message)) {
+    return "Apology";
+  }
+  if (/birthday|bday|upandin|upandina|උපන්|பிறந்தநாள்|பிறந்த நாள்/iu.test(message)) return "Birthday";
+  if (/anniversary|sangwathsara|සංවත්සර|திருமண நாள்/iu.test(message)) return "Anniversary";
+  if (/sympathy|condolence|funeral|maranaya|anuthabam|අනුකම්පා|அனுதாபம்|இறப்பு/iu.test(message)) return "Sympathy";
+  if (/thank|thanks|sthuthi|istuti|nandri|ස්තුති|நன்றி/iu.test(message)) return "Thank-you";
+  if (/romantic|love|adare|aadare|kadhal|ආදර|காதல்/iu.test(message)) return "Romantic";
+
+  return null;
+}
+
+function titleProduct(message: string, plan?: ShoppingPlan) {
+  const queries = plan?.search_queries?.join(" ") ?? "";
+  const haystack = `${message} ${queries}`;
+
+  const productRules: Array<[RegExp, string]> = [
+    [/flower|rose|bouquet|mal|rosa|මල්|රෝස|மலர்|பூ|ரோஜா/iu, "flowers"],
+    [/cake|kek|කේක්|கேக்/iu, "cake"],
+    [/choco|chocolate|chokalat|චොක|சாக்ல/iu, "chocolates"],
+    [/hamper|basket|bundle|හැම්පර්|ஹாம்பர்/iu, "hamper"],
+    [/perfume|fragrance/iu, "perfume"],
+    [/toy|lama|kid|child|ළම|குழந்தை/iu, "toy"],
+    [/card|greeting|note/iu, "card"],
+  ];
+
+  return productRules.find(([pattern]) => pattern.test(haystack))?.[1] ?? "gift";
+}
+
+function conversationTitle(message: string, plan?: ShoppingPlan) {
+  if (hasTrackingIntent(message)) return "Order tracking";
+
+  if (!hasShoppingIntent(message)) {
+    if (/president|janadipathi|ජනාධිපති|ஜனாதிபதி/iu.test(message)) return "General question: president";
+    return "General question";
+  }
+
+  const recipient = titleRecipient(message, plan);
+  const occasion = titleOccasion(message, plan);
+  const product = titleProduct(message, plan);
+  const city = plan?.city ? titleCase(plan.city) : null;
+  const productLabel = product === "gift" ? "gift" : product;
+  let base = "Kapruka gift ideas";
+
+  if (occasion === "Apology" && productLabel === "flowers") {
+    base = recipient ? `Apology flowers for ${recipient}` : "Apology flowers";
+  } else if (occasion && recipient) {
+    base = `${occasion} gift for ${recipient}`;
+  } else if (recipient) {
+    base = `${titleCase(productLabel)} for ${recipient}`;
+  } else if (occasion) {
+    base = `${occasion} ${productLabel}`;
+  } else if (productLabel !== "gift") {
+    base = titleCase(productLabel);
+  } else if (city) {
+    base = `Gift delivery to ${city}`;
+  }
+
+  if (city && !base.toLowerCase().includes(city.toLowerCase()) && base.length <= 34) {
+    base = `${base} in ${city}`;
+  }
+
+  return compactTitle(base);
+}
+
+function shouldRefreshConversationTitle(currentTitle: string | null | undefined, firstMessage: string) {
+  const title = currentTitle?.trim();
+  if (!title || title === DEFAULT_CONVERSATION_TITLE) return true;
+  return title === legacyConversationTitle(firstMessage);
+}
+
+function conversationTitleUpdate(currentTitle: string | null | undefined, firstMessage: string, plan?: ShoppingPlan) {
+  return shouldRefreshConversationTitle(currentTitle, firstMessage) ? { title: conversationTitle(firstMessage, plan) } : {};
 }
 
 function hasTrackingIntent(message: string) {
@@ -885,18 +1009,27 @@ export async function POST(request: Request) {
             )
             .catch((error) => (error instanceof Error ? error.message : "Order tracking failed."));
 
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
-          role: "assistant",
-          content: reply,
-          metadata: {
-            order_tracking: {
-              order_number: trackingOrderNumber,
+      await prisma.$transaction([
+        prisma.message.create({
+          data: {
+            conversationId: conversation.id,
+            role: "assistant",
+            content: reply,
+            metadata: {
+              order_tracking: {
+                order_number: trackingOrderNumber,
+              },
             },
           },
-        },
-      });
+        }),
+        prisma.conversation.update({
+          where: { id: conversation.id },
+          data: {
+            language: replyLanguage ?? "english",
+            ...conversationTitleUpdate(conversation.title, message),
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         reply,
@@ -910,18 +1043,27 @@ export async function POST(request: Request) {
     if (hasTrackingIntent(message)) {
       const reply = buildMissingTrackingReply(replyLanguage);
 
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
-          role: "assistant",
-          content: reply,
-          metadata: {
-            order_tracking: {
-              missing_order_number: true,
+      await prisma.$transaction([
+        prisma.message.create({
+          data: {
+            conversationId: conversation.id,
+            role: "assistant",
+            content: reply,
+            metadata: {
+              order_tracking: {
+                missing_order_number: true,
+              },
             },
           },
-        },
-      });
+        }),
+        prisma.conversation.update({
+          where: { id: conversation.id },
+          data: {
+            language: replyLanguage ?? "english",
+            ...conversationTitleUpdate(conversation.title, message),
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         reply,
@@ -935,16 +1077,25 @@ export async function POST(request: Request) {
     if (!hasShoppingIntent(message)) {
       const reply = buildOutOfScopeReply(replyLanguage, responsePreferences);
 
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
-          role: "assistant",
-          content: reply,
-          metadata: {
-            out_of_scope: true,
+      await prisma.$transaction([
+        prisma.message.create({
+          data: {
+            conversationId: conversation.id,
+            role: "assistant",
+            content: reply,
+            metadata: {
+              out_of_scope: true,
+            },
           },
-        },
-      });
+        }),
+        prisma.conversation.update({
+          where: { id: conversation.id },
+          data: {
+            language: replyLanguage ?? "english",
+            ...conversationTitleUpdate(conversation.title, message),
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         reply,
@@ -1036,6 +1187,7 @@ export async function POST(request: Request) {
         where: { id: conversation.id },
         data: {
           language: plan.language ?? replyLanguage ?? "english",
+          ...conversationTitleUpdate(conversation.title, message, plan),
           cartSnapshot: body.cartSnapshot ?? undefined,
           lastProducts: products,
           lastDelivery: deliveryPayload ?? undefined,
