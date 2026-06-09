@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkDelivery, createOrder, listDeliveryCities } from "@/lib/kapruka";
+import { buildCheckoutReadiness } from "@/lib/gift-agents";
 import type { CheckoutPayload } from "@/lib/types";
 import { getActor, getOwnedConversation } from "@/lib/actor";
 import { prisma } from "@/lib/db";
@@ -205,20 +206,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in or continue as guest first." }, { status: 401 });
     }
 
+    const readiness = buildCheckoutReadiness({ checkout: payload });
+
     if (!payload.cart?.length) {
-      return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
+      return NextResponse.json({ error: "Cart is empty.", readiness }, { status: 400 });
     }
 
     if (!payload.recipient?.name || !payload.recipient?.phone) {
-      return NextResponse.json({ error: "Recipient name and phone are required." }, { status: 400 });
+      return NextResponse.json({ error: "Recipient name and phone are required.", readiness }, { status: 400 });
     }
 
     if (!payload.delivery?.address || !payload.delivery?.city || !payload.delivery?.date) {
-      return NextResponse.json({ error: "Delivery address, city, and date are required." }, { status: 400 });
+      return NextResponse.json({ error: "Delivery address, city, and date are required.", readiness }, { status: 400 });
     }
 
     if (!payload.sender?.name) {
-      return NextResponse.json({ error: "Sender name is required." }, { status: 400 });
+      return NextResponse.json({ error: "Sender name is required.", readiness }, { status: 400 });
     }
 
     const resolved = await resolveDeliveryCity(payload.delivery.city, payload.delivery.address);
@@ -229,6 +232,7 @@ export async function POST(request: Request) {
           error: "Please choose a specific Kapruka delivery city.",
           code: "city_ambiguous",
           suggestions: resolved.suggestions,
+          readiness,
         },
         { status: 400 },
       );
@@ -282,7 +286,7 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ result: checkout, normalized_city: resolved.city, delivery_check: deliveryCheck });
+    return NextResponse.json({ result: checkout, normalized_city: resolved.city, delivery_check: deliveryCheck, readiness });
   } catch (error) {
     return NextResponse.json(
       {

@@ -18,6 +18,7 @@ model User {
   sessions      Session[]
   conversations Conversation[]
   checkoutRecords CheckoutRecord[]
+  recipientMemories RecipientMemory[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -64,6 +65,7 @@ model GuestSession {
   migratedAt    DateTime?
   conversations Conversation[]
   checkoutRecords CheckoutRecord[]
+  recipientMemories RecipientMemory[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -118,4 +120,28 @@ model CheckoutRecord {
   @@index([conversationId])
   @@index([userId, createdAt])
   @@index([guestSessionId, createdAt])
+}
+
+model RecipientMemory {
+  id             String   @id @default(cuid())
+  userId         String?
+  guestSessionId String?
+  recipientKey   String
+  displayName    String
+  occasions      String[] @default([])
+  preferredCategories String[] @default([])
+  deliveryCities String[] @default([])
+  minBudget      Int?
+  maxBudget      Int?
+  lastProducts   Json?
+  notes          String[] @default([])
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestSession   GuestSession? @relation(fields: [guestSessionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, recipientKey])
+  @@unique([guestSessionId, recipientKey])
+  @@index([userId, updatedAt])
+  @@index([guestSessionId, updatedAt])
 }

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { checkDelivery, searchProducts, trackOrder } from "@/lib/kapruka";
+import { buildGiftAgentInsights } from "@/lib/gift-agents";
 import { callOpenRouter, extractJsonObject } from "@/lib/openrouter";
-import type { ChatMessage, DetailLevel, EmojiMode, OrderTracking, Product, ResponsePreferences, ResponseTone } from "@/lib/types";
+import type { ChatMessage, DetailLevel, EmojiMode, GiftAgentInsights, OrderTracking, Product, ResponsePreferences, ResponseTone } from "@/lib/types";
 import { getActor, getOwnedConversation } from "@/lib/actor";
 import { prisma } from "@/lib/db";
 
@@ -881,8 +882,9 @@ function buildGroundedReply(params: {
   delivery: unknown;
   queries: string[];
   preferences: ResponsePreferences;
+  agentInsights?: GiftAgentInsights | null;
 }) {
-  const { products, plan, delivery, queries, preferences } = params;
+  const { products, plan, delivery, queries, preferences, agentInsights } = params;
   const deliveryLine = summarizeDelivery(delivery, plan.language);
   const language = plan.language ?? "english";
   const emoji = preferences.emojiMode === "none" ? "" : " 🎁";
@@ -923,6 +925,16 @@ function buildGroundedReply(params: {
     .join("\n");
   const deliveryText = deliveryLine ? `\n\nDelivery note: ${deliveryLine}` : "";
   const addonText = plan.suggested_addons?.length ? `\n\nUseful add-ons: ${plan.suggested_addons.join(", ")}.` : "";
+  const agentText = [
+    agentInsights?.bundle
+      ? `Bundle agent: ${agentInsights.bundle.title} (${agentInsights.bundle.currency} ${agentInsights.bundle.total}) with item IDs ${agentInsights.bundle.itemIds.join(", ")}.`
+      : "",
+    agentInsights?.substitutions.length ? `Substitution agent: ${agentInsights.substitutions[0].reason}` : "",
+    agentInsights?.recipientMemory ? `Memory agent: remembered context for ${agentInsights.recipientMemory.displayName}.` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const agentBlock = agentText ? `\n\n${agentText}` : "";
 
   if (language === "sinhala") {
     const sinhalaDeliveryText = deliveryLine ? `\n\nබෙදාහැරීම: ${deliveryLine}` : "";
@@ -933,13 +945,13 @@ function buildGroundedReply(params: {
   if (language === "singlish") {
     const singlishDeliveryText = deliveryLine ? `\n\nDelivery: ${deliveryLine}` : "";
     const singlishAddonText = plan.suggested_addons?.length ? `\n\nSmall add-ons hodata set wenawa: ${plan.suggested_addons.join(", ")}.` : "";
-    return `Oyage request ekata match wena real Kapruka options tikak hambuna${emoji}\n\n${productLines}${singlishDeliveryText}${singlishAddonText}\n\nMage first pick eka: ${picks[0].name}. Me wage ekak hari dekak cart ekata add karala complete gift ekak hadamuda?`;
+    return `Oyage request ekata match wena real Kapruka options tikak hambuna${emoji}\n\n${productLines}${singlishDeliveryText}${singlishAddonText}${agentBlock}\n\nMage first pick eka: ${picks[0].name}. Me wage ekak hari dekak cart ekata add karala complete gift ekak hadamuda?`;
   }
 
   if (language === "tanglish") {
     const tanglishDeliveryText = deliveryLine ? `\n\nDelivery: ${deliveryLine}` : "";
     const tanglishAddonText = plan.suggested_addons?.length ? `\n\nSmall add-ons nalla irukkum: ${plan.suggested_addons.join(", ")}.` : "";
-    return `Unga request-ku match aana real Kapruka options kidaichirukku${emoji}\n\n${productLines}${tanglishDeliveryText}${tanglishAddonText}\n\nEn first pick: ${picks[0].name}. Idhula one or two cart-la add pannalama? Naan gift-a complete panna next step help panren.`;
+    return `Unga request-ku match aana real Kapruka options kidaichirukku${emoji}\n\n${productLines}${tanglishDeliveryText}${tanglishAddonText}${agentBlock}\n\nEn first pick: ${picks[0].name}. Idhula one or two cart-la add pannalama? Naan gift-a complete panna next step help panren.`;
   }
 
   if (language === "tamil") {
@@ -948,7 +960,7 @@ function buildGroundedReply(params: {
     return `உங்கள் கோரிக்கைக்கு பொருத்தமான Kapruka தேர்வுகள் கிடைத்தன${emoji}\n\n${productLines}${tamilDeliveryText}${tamilAddonText}\n\nஎன் முதல் பரிந்துரை: ${picks[0].name}. இதில் ஒன்றையோ சிலவற்றையோ வண்டியில் சேர்க்கலாமா?`;
   }
 
-  return `I found some real Kapruka options that fit the request${emoji}\n\n${productLines}${deliveryText}${addonText}\n\nMy first pick is ${picks[0].name}. Add one or two to the cart and I will help you turn it into a complete gift.`;
+  return `I found some real Kapruka options that fit the request${emoji}\n\n${productLines}${deliveryText}${addonText}${agentBlock}\n\nMy first pick is ${picks[0].name}. Add one or two to the cart and I will help you turn it into a complete gift.`;
 }
 
 export async function POST(request: Request) {
@@ -1147,7 +1159,21 @@ export async function POST(request: Request) {
           }).catch((error) => ({ error: String(error) }))
         : null;
 
-    const groundedReply = buildGroundedReply({ products, plan, delivery, queries, preferences: responsePreferences });
+    const agentInsights = await buildGiftAgentInsights({
+      actor,
+      plan,
+      products,
+      delivery,
+      cartSnapshot: body.cartSnapshot,
+    });
+    const groundedReply = buildGroundedReply({
+      products,
+      plan,
+      delivery,
+      queries,
+      preferences: responsePreferences,
+      agentInsights,
+    });
     const reply = products.length
       ? await callOpenRouter(
           [
@@ -1160,6 +1186,7 @@ export async function POST(request: Request) {
               content: JSON.stringify({
                 grounded_response: groundedReply,
                 allowed_products: productBrief(products),
+                agent_insights: agentInsights,
               }),
             },
           ],
@@ -1180,6 +1207,7 @@ export async function POST(request: Request) {
             plan,
             products,
             delivery: deliveryPayload,
+            agentInsights,
           },
         },
       }),
@@ -1200,6 +1228,7 @@ export async function POST(request: Request) {
       products,
       delivery: deliveryPayload,
       plan,
+      agentInsights,
       conversationId: conversation.id,
     });
   } catch (error) {

@@ -1,8 +1,15 @@
 "use client";
 
 import {
+  AlertTriangle,
+  Blocks,
+  BookUser,
   CalendarDays,
   Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleDot,
+  ExternalLink,
   Gift,
   Heart,
   Loader2,
@@ -15,15 +22,26 @@ import {
   LogOut,
   Search,
   Send,
+  ShieldCheck,
   SlidersHorizontal,
   ShoppingBag,
   Sparkles,
+  Shuffle,
   Trash2,
   X,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { CartItem, ChatMessage, DeliveryCheck, OrderTracking, Product, ResponsePreferences } from "@/lib/types";
+import type {
+  CartItem,
+  ChatMessage,
+  CheckoutReadiness,
+  DeliveryCheck,
+  GiftAgentInsights,
+  OrderTracking,
+  Product,
+  ResponsePreferences,
+} from "@/lib/types";
 
 type AppLanguage = "english" | "sinhala" | "singlish" | "tamil" | "tanglish";
 
@@ -238,6 +256,15 @@ function trackingDateLabel(value?: string | null) {
   return value && value.trim() ? value : "Not available yet";
 }
 
+function mergeReadiness(current: GiftAgentInsights | null, checkoutReadiness: CheckoutReadiness): GiftAgentInsights {
+  return {
+    bundle: current?.bundle ?? null,
+    substitutions: current?.substitutions ?? [],
+    recipientMemory: current?.recipientMemory ?? null,
+    checkoutReadiness,
+  };
+}
+
 export default function Home() {
   const { data: session } = useSession();
   const [selectedLanguage, setSelectedLanguage] = useState<AppLanguage>("english");
@@ -253,6 +280,7 @@ export default function Home() {
   const [isSending, setIsSending] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [delivery, setDelivery] = useState<DeliveryCheck | null>(null);
+  const [agentInsights, setAgentInsights] = useState<GiftAgentInsights | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
@@ -284,6 +312,14 @@ export default function Home() {
   const subtotal = useMemo(
     () => cart.reduce((total, item) => total + (item.product.price?.amount ?? 0) * item.quantity, 0),
     [cart],
+  );
+  const productNamesById = useMemo(
+    () => new Map(products.map((product) => [product.id, product.name])),
+    [products],
+  );
+  const bundleProductNames = useMemo(
+    () => agentInsights?.bundle?.itemIds.map((id) => productNamesById.get(id) ?? id) ?? [],
+    [agentInsights?.bundle?.itemIds, productNamesById],
   );
 
   async function refreshGuestSession() {
@@ -355,6 +391,7 @@ export default function Home() {
     ]);
     setProducts([]);
     setDelivery(null);
+    setAgentInsights(null);
     setCart([]);
     await loadConversations();
   }
@@ -381,6 +418,7 @@ export default function Home() {
     ]);
     setProducts(conversation.lastProducts ?? []);
     setDelivery(conversation.lastDelivery ?? null);
+    setAgentInsights(conversation.agentInsights ?? null);
     setCart([]);
   }
 
@@ -438,6 +476,14 @@ export default function Home() {
       setConversationId(data.conversationId ?? conversationId);
       setProducts(data.products ?? []);
       setDelivery(data.delivery ?? null);
+      setAgentInsights(data.agentInsights ?? null);
+      if (data.agentInsights) {
+        try {
+          localStorage.setItem("kapruka_agent_insights", JSON.stringify(data.agentInsights));
+        } catch {
+          // ignore storage errors
+        }
+      }
       await loadConversations();
 
       if (
@@ -555,6 +601,9 @@ export default function Home() {
         const suggestions = Array.isArray(data.suggestions) && data.suggestions.length
           ? ` Try: ${data.suggestions.slice(0, 8).join(", ")}.`
           : "";
+        if (data.readiness) {
+          setAgentInsights((current) => mergeReadiness(current, data.readiness));
+        }
         throw new Error(`${data.error ?? "Could not create checkout."}${suggestions}`);
       }
 
@@ -567,6 +616,9 @@ export default function Home() {
         throw new Error("Kapruka created a response, but the checkout link format was unexpected.");
       }
 
+      if (data.readiness) {
+        setAgentInsights((current) => mergeReadiness(current, data.readiness));
+      }
       setCheckoutSuccess(normalizedCheckout);
     } catch (error) {
       setCheckoutError(error instanceof Error ? error.message : "Checkout failed.");
@@ -625,9 +677,18 @@ export default function Home() {
                 <h1 className="text-xl font-semibold sm:text-2xl">Kavi Gift Concierge</h1>
               </div>
             </div>
-            <div className="hidden items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144] md:flex">
-              <Sparkles size={16} className="text-[#cc2f2f]" />
-              Multilingual, checkout-ready
+            <div className="hidden items-center gap-3 md:flex">
+              <a
+                href="/agents"
+                className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm font-semibold text-[#5d5144] transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
+              >
+                <Blocks size={15} />
+                Agent Builder
+              </a>
+              <div className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144]">
+                <Sparkles size={16} className="text-[#cc2f2f]" />
+                Multilingual, checkout-ready
+              </div>
             </div>
             <label className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144]">
               <span className="hidden font-medium sm:inline">Language</span>
@@ -764,7 +825,306 @@ export default function Home() {
               </div>
 
               {products.length ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <>
+                  {agentInsights ? (
+                    <section className="mb-5">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#85653a]">Agent decisions</p>
+                          <h3 className="text-lg font-semibold">Active agents</h3>
+                        </div>
+                        <a
+                          href="/agents"
+                          className="flex items-center gap-1 rounded-md border border-[#d8c5a7] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#5d5144] transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
+                        >
+                          <ExternalLink size={12} />
+                          Inspector
+                        </a>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {/* ── Bundle Builder ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1f4f4a]/10">
+                              <Blocks size={16} className="text-[#1f4f4a]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Bundle Builder</p>
+                              <p className="text-xs text-[#85653a]">
+                                {agentInsights.bundle ? `${agentInsights.bundle.itemIds.length} items curated` : "No bundle yet"}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.bundle
+                                  ? "bg-[#e8f5f1] text-[#1f7a55]"
+                                  : "bg-[#f0e4cc] text-[#85653a]"
+                              }`}
+                            >
+                              {agentInsights.bundle ? "active" : "idle"}
+                            </span>
+                          </div>
+                          {agentInsights.bundle ? (
+                            <div className="px-4 py-3">
+                              <p className="text-sm font-semibold text-[#1d1a16]">{agentInsights.bundle.title}</p>
+                              <p className="mt-1 text-xs text-[#756650]">{agentInsights.bundle.rationale}</p>
+                              <div className="mt-3 space-y-1.5">
+                                {bundleProductNames.map((name, i) => (
+                                  <div key={i} className="flex items-center gap-2 text-xs">
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f4f4a]" />
+                                    <span className="flex-1 truncate text-[#3a3028]">{name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {agentInsights.bundle.missingAddons.length > 0 && (
+                                <p className="mt-2 text-xs text-[#a06030]">
+                                  Could add: {agentInsights.bundle.missingAddons.join(", ")}
+                                </p>
+                              )}
+                              <div className="mt-3 flex items-center justify-between">
+                                <span className="text-sm font-bold text-[#1f4f4a]">
+                                  {formatMoney(agentInsights.bundle.total, agentInsights.bundle.currency)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    agentInsights.bundle!.itemIds.forEach((id) => {
+                                      const product = products.find((p) => p.id === id);
+                                      if (product) addToCart(product);
+                                    });
+                                  }}
+                                  className="flex items-center gap-1.5 rounded-lg bg-[#1f4f4a] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#173d39]"
+                                >
+                                  <Plus size={12} />
+                                  Add bundle
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="px-4 py-3 text-xs text-[#9a8878]">
+                              Ask for a gift — the Bundle Builder will curate items from the shelf.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* ── Checkout Readiness ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#cc2f2f]/10">
+                              <ShieldCheck size={16} className="text-[#cc2f2f]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Checkout Readiness</p>
+                              <p className="text-xs text-[#85653a]">{agentInsights.checkoutReadiness.nextAction}</p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.checkoutReadiness.status === "ready"
+                                  ? "bg-[#e8f5f1] text-[#1f7a55]"
+                                  : agentInsights.checkoutReadiness.status === "needs_details"
+                                    ? "bg-[#fff3cd] text-[#856404]"
+                                    : "bg-[#fde8e8] text-[#842029]"
+                              }`}
+                            >
+                              {agentInsights.checkoutReadiness.status.replace("_", " ")}
+                            </span>
+                          </div>
+                          <div className="px-4 py-3">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-[#756650]">Readiness score</span>
+                              <span className="font-bold text-[#1d1a16]">{agentInsights.checkoutReadiness.score}%</span>
+                            </div>
+                            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#f0e4cc]">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${agentInsights.checkoutReadiness.score}%`,
+                                  background:
+                                    agentInsights.checkoutReadiness.score >= 80
+                                      ? "#1f7a55"
+                                      : agentInsights.checkoutReadiness.score >= 50
+                                        ? "#d97706"
+                                        : "#cc2f2f",
+                                }}
+                              />
+                            </div>
+                            {agentInsights.checkoutReadiness.missing.length > 0 && (
+                              <ul className="mt-3 space-y-1">
+                                {agentInsights.checkoutReadiness.missing.map((item) => (
+                                  <li key={item} className="flex items-center gap-2 text-xs text-[#9b3e25]">
+                                    <CircleDot size={11} className="shrink-0" />
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            {agentInsights.checkoutReadiness.warnings.length > 0 && (
+                              <ul className="mt-2 space-y-1">
+                                {agentInsights.checkoutReadiness.warnings.map((warning) => (
+                                  <li key={warning} className="flex items-start gap-2 text-xs text-[#a06030]">
+                                    <AlertTriangle size={11} className="mt-0.5 shrink-0" />
+                                    {warning}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            {agentInsights.checkoutReadiness.status === "ready" && (
+                              <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#1f7a55]">
+                                <CheckCircle2 size={13} />
+                                Ready to create checkout link
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* ── Substitution Agent ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#7c3aed]/10">
+                              <Shuffle size={16} className="text-[#7c3aed]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Substitution Agent</p>
+                              <p className="text-xs text-[#85653a]">
+                                {agentInsights.substitutions.length
+                                  ? `${agentInsights.substitutions.length} substitution${agentInsights.substitutions.length > 1 ? "s" : ""} found`
+                                  : "All products available"}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.substitutions.length
+                                  ? "bg-[#f3e8ff] text-[#7c3aed]"
+                                  : "bg-[#e8f5f1] text-[#1f7a55]"
+                              }`}
+                            >
+                              {agentInsights.substitutions.length ? "flagged" : "clear"}
+                            </span>
+                          </div>
+                          {agentInsights.substitutions.length > 0 ? (
+                            <div className="divide-y divide-[#f0e4cc] px-4">
+                              {agentInsights.substitutions.slice(0, 2).map((sub, i) => (
+                                <div key={i} className="py-3">
+                                  <p className="text-xs text-[#9b3e25]">{sub.reason}</p>
+                                  <div className="mt-2 space-y-1.5">
+                                    {sub.alternatives.slice(0, 3).map((alt) => (
+                                      <div key={alt.id} className="flex items-center justify-between gap-2">
+                                        <span className="min-w-0 truncate text-xs text-[#3a3028]">{alt.name}</span>
+                                        <div className="flex shrink-0 items-center gap-1.5">
+                                          <span className="text-xs font-semibold text-[#1f4f4a]">{formatPrice(alt)}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => addToCart(alt)}
+                                            className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1f4f4a] text-white transition hover:bg-[#173d39]"
+                                            aria-label={`Add ${alt.name} to cart`}
+                                          >
+                                            <Plus size={11} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="px-4 py-3 text-xs text-[#9a8878]">
+                              All shelf items are in-stock and within budget. No swaps needed.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* ── Recipient Memory ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#d97706]/10">
+                              <BookUser size={16} className="text-[#d97706]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Recipient Memory</p>
+                              <p className="text-xs text-[#85653a]">
+                                {agentInsights.recipientMemory ? `Profile for ${agentInsights.recipientMemory.displayName}` : "No profile yet"}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.recipientMemory
+                                  ? "bg-[#fef3c7] text-[#92400e]"
+                                  : "bg-[#f0e4cc] text-[#85653a]"
+                              }`}
+                            >
+                              {agentInsights.recipientMemory ? "remembered" : "new"}
+                            </span>
+                          </div>
+                          {agentInsights.recipientMemory ? (
+                            <div className="px-4 py-3">
+                              <p className="text-sm font-semibold text-[#1d1a16]">{agentInsights.recipientMemory.displayName}</p>
+                              {agentInsights.recipientMemory.preferredCategories.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="mb-1.5 text-xs text-[#756650]">Likes</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {agentInsights.recipientMemory.preferredCategories.slice(0, 6).map((cat) => (
+                                      <span key={cat} className="rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-xs font-medium text-[#92400e]">
+                                        {cat}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {agentInsights.recipientMemory.occasions.filter(Boolean).length > 0 && (
+                                <div className="mt-2">
+                                  <p className="mb-1.5 text-xs text-[#756650]">Occasions</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {agentInsights.recipientMemory.occasions.filter(Boolean).slice(0, 4).map((occ) => (
+                                      <span key={occ} className="rounded-full bg-[#e8f5f1] px-2.5 py-0.5 text-xs font-medium text-[#1f7a55]">
+                                        {occ}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {agentInsights.recipientMemory.deliveryCities.filter(Boolean).length > 0 && (
+                                <div className="mt-2 flex items-center gap-1.5 text-xs text-[#756650]">
+                                  <MapPin size={11} />
+                                  {agentInsights.recipientMemory.deliveryCities.filter(Boolean).join(", ")}
+                                </div>
+                              )}
+                              {(agentInsights.recipientMemory.minBudget || agentInsights.recipientMemory.maxBudget) && (
+                                <div className="mt-1 text-xs text-[#756650]">
+                                  Budget range:{" "}
+                                  <span className="font-semibold text-[#1d1a16]">
+                                    {agentInsights.recipientMemory.minBudget
+                                      ? formatMoney(agentInsights.recipientMemory.minBudget)
+                                      : ""}
+                                    {agentInsights.recipientMemory.minBudget && agentInsights.recipientMemory.maxBudget ? " – " : ""}
+                                    {agentInsights.recipientMemory.maxBudget
+                                      ? formatMoney(agentInsights.recipientMemory.maxBudget)
+                                      : ""}
+                                  </span>
+                                </div>
+                              )}
+                              {agentInsights.recipientMemory.notes.filter(Boolean).length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {agentInsights.recipientMemory.notes.filter(Boolean).slice(0, 3).map((note) => (
+                                    <div key={note} className="flex items-start gap-1.5 text-xs text-[#756650]">
+                                      <ChevronRight size={10} className="mt-0.5 shrink-0 text-[#85653a]" />
+                                      {note}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="px-4 py-3 text-xs text-[#9a8878]">
+                              Name a specific recipient in your request and Kavi will remember their preferences.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
+                  <div className="grid gap-4 sm:grid-cols-2">
                   {products.map((product, index) => (
                     <article key={product.id} className="overflow-hidden rounded-lg border border-[#e1cfaf] bg-white shadow-sm">
                       <div className="aspect-[4/3] bg-[#efe1c9]">
@@ -811,7 +1171,8 @@ export default function Home() {
                       </div>
                     </article>
                   ))}
-                </div>
+                  </div>
+                </>
               ) : (
                 <div className="flex min-h-[420px] flex-col items-center justify-center rounded-lg border border-dashed border-[#d7c5aa] bg-[#fffaf0] p-8 text-center">
                   <MessageCircle size={36} className="text-[#cc2f2f]" />

@@ -79,6 +79,47 @@ export type CheckoutPayload = {
   currency?: string;
 };
 
+export type BundleRecommendation = {
+  title: string;
+  itemIds: string[];
+  total: number;
+  currency: string;
+  rationale: string;
+  missingAddons: string[];
+};
+
+export type SubstitutionSuggestion = {
+  originalProductId?: string;
+  reason: string;
+  alternatives: Product[];
+};
+
+export type CheckoutReadiness = {
+  status: "ready" | "needs_details" | "blocked";
+  score: number;
+  missing: string[];
+  warnings: string[];
+  nextAction: string;
+};
+
+export type RecipientMemoryProfile = {
+  recipientKey: string;
+  displayName: string;
+  occasions: string[];
+  preferredCategories: string[];
+  deliveryCities: string[];
+  minBudget?: number | null;
+  maxBudget?: number | null;
+  notes: string[];
+};
+
+export type GiftAgentInsights = {
+  bundle?: BundleRecommendation | null;
+  substitutions: SubstitutionSuggestion[];
+  checkoutReadiness: CheckoutReadiness;
+  recipientMemory?: RecipientMemoryProfile | null;
+};
+
 export type OrderTracking = {
   order_number?: string;
   pnref?: string;

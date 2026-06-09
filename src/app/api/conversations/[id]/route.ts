@@ -38,6 +38,16 @@ export async function GET(
       cartSnapshot: conversation?.cartSnapshot,
       lastProducts: conversation?.lastProducts,
       lastDelivery: conversation?.lastDelivery,
+      agentInsights: conversation?.messages
+        .filter((message) => message.role === "assistant")
+        .map((message) => {
+          const metadata = message.metadata;
+          return metadata && typeof metadata === "object" && "agentInsights" in metadata
+            ? (metadata as { agentInsights?: unknown }).agentInsights
+            : null;
+        })
+        .filter(Boolean)
+        .at(-1) ?? null,
       messages: conversation?.messages.map((message) => ({
         id: message.id,
         role: message.role,
