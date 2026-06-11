@@ -487,6 +487,7 @@ export default function Home() {
       await loadConversations();
 
       if (
+        data.plan?.language === "english" ||
         data.plan?.language === "sinhala" ||
         data.plan?.language === "singlish" ||
         data.plan?.language === "tamil" ||

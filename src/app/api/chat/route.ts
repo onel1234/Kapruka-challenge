@@ -285,7 +285,6 @@ const SINGLISH_WORDS = new Set([
   "mokakda",
   "nangi",
   "ona",
-  "one",
   "onee",
   "oni",
   "oya",
@@ -299,7 +298,6 @@ const SINGLISH_WORDS = new Set([
   "rupiyal",
   "samawa",
   "sthuthi",
-  "ta",
   "taggak",
   "thagi",
   "thaththa",
@@ -309,6 +307,26 @@ const SINGLISH_WORDS = new Set([
   "walata",
   "yawanna",
   "yata",
+]);
+
+// Common English words that should NOT trigger Singlish detection even if they
+// overlap with Singlish vocabulary (e.g. "one" means "ඕනේ" in Singlish but is
+// extremely common in English).
+const ENGLISH_STOP_WORDS = new Set([
+  "a", "an", "the", "is", "are", "was", "were", "am",
+  "i", "me", "my", "we", "our", "you", "your", "he", "she", "it", "they",
+  "this", "that", "these", "those",
+  "do", "does", "did", "will", "would", "can", "could", "should", "may", "might",
+  "have", "has", "had", "be", "been", "being",
+  "in", "on", "at", "to", "for", "of", "with", "from", "by", "about", "into",
+  "and", "or", "but", "not", "no", "so", "if", "as", "than",
+  "what", "which", "who", "how", "when", "where", "why",
+  "all", "some", "any", "each", "one", "two", "three",
+  "get", "give", "go", "come", "make", "take", "want", "need", "find", "send",
+  "good", "best", "nice", "great",
+  "under", "over", "below", "above", "less", "more",
+  "something", "anything", "nothing", "everything",
+  "just", "also", "very", "really", "please", "thank", "thanks",
 ]);
 
 function normalizeLanguage(language: unknown): AppLanguage | null {
@@ -337,9 +355,15 @@ function detectTanglish(message: string) {
 function detectSinglish(message: string) {
   const normalized = message.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
   const words = normalized.match(/[a-z]+/g) ?? [];
-  const hits = words.filter((word) => SINGLISH_WORDS.has(word)).length;
+  // Only count words that are in the Singlish set AND are NOT common English words
+  const singlishHits = words.filter((word) => SINGLISH_WORDS.has(word) && !ENGLISH_STOP_WORDS.has(word)).length;
+  const englishHits = words.filter((word) => ENGLISH_STOP_WORDS.has(word)).length;
 
-  if (hits >= 2) return true;
+  // If the message is predominantly English words, require stronger Singlish evidence
+  const threshold = englishHits > singlishHits ? 3 : 2;
+  if (singlishHits >= threshold) return true;
+
+  // Strong Singlish markers: these suffixed pronouns are very unlikely in English
   if (/\b(?:mata|mage|mama|oyata|eyata|ammata|thaththata|akkata|nangita|aiyata|mallita|yaluwata)\b/i.test(normalized)) {
     return true;
   }
@@ -349,11 +373,23 @@ function detectSinglish(message: string) {
   );
 }
 
+function looksLikeEnglish(message: string) {
+  const normalized = message.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
+  const words = normalized.match(/[a-z]+/g) ?? [];
+  if (words.length === 0) return false;
+  const englishCount = words.filter((word) => ENGLISH_STOP_WORDS.has(word)).length;
+  // If more than 40% of the words are common English, treat as English
+  return englishCount / words.length > 0.4;
+}
+
 function detectMessageLanguage(message: string): AppLanguage | null {
   if (/[\u0D80-\u0DFF]/.test(message)) return "sinhala";
   if (/[\u0B80-\u0BFF]/.test(message)) return "tamil";
   if (detectSinglish(message)) return "singlish";
   if (detectTanglish(message)) return "tanglish";
+  // Positively identify English so callers can distinguish "detected English"
+  // from "could not detect anything"
+  if (looksLikeEnglish(message)) return "english";
   return null;
 }
 
@@ -987,7 +1023,13 @@ export async function POST(request: Request) {
 
     const history = body.history ?? [];
     const selectedLanguage = normalizeLanguage(body.language);
-    const replyLanguage = detectMessageLanguage(message) ?? selectedLanguage;
+    const detectedLanguage = detectMessageLanguage(message);
+    // If the message is clearly English (or we positively detected a language),
+    // use that. Only fall back to selectedLanguage when detection returns null
+    // (e.g. very short or ambiguous messages). This prevents the "sticky
+    // language" bug where a previous Singlish turn causes English messages to
+    // get Singlish replies.
+    const replyLanguage = detectedLanguage ?? selectedLanguage;
     const responsePreferences = normalizeResponsePreferences(body.responsePreferences);
     const conversation = await resolveConversation({
       conversationId: body.conversationId ?? null,
