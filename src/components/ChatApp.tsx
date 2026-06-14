@@ -281,6 +281,8 @@ export default function Home() {
   ]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [delivery, setDelivery] = useState<DeliveryCheck | null>(null);
   const [agentInsights, setAgentInsights] = useState<GiftAgentInsights | null>(null);
