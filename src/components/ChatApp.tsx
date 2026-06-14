@@ -29,6 +29,9 @@ import {
   Shuffle,
   Trash2,
   X,
+  Menu,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -268,6 +271,8 @@ function mergeReadiness(current: GiftAgentInsights | null, checkoutReadiness: Ch
 export default function Home() {
   const { data: session } = useSession();
   const [selectedLanguage, setSelectedLanguage] = useState<AppLanguage>("english");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -540,6 +545,7 @@ export default function Home() {
   }
 
   function addToCart(product: Product) {
+    setIsSidebarOpen(true);
     setCart((current) => {
       const existing = current.find((item) => item.product.id === product.id);
       if (existing) {
@@ -665,10 +671,12 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f2e8] text-[#1d1a16]">
-      <div className="grid min-h-screen grid-cols-1 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <section className="flex min-h-screen flex-col border-r border-[#ded2bd] bg-[#fffaf0]">
-          <header className="flex items-center justify-between border-b border-[#eadfc9] px-5 py-4 sm:px-8">
+    
+    <main className="flex h-screen overflow-hidden bg-[#f7f2e8] text-[#1d1a16]">
+      {/* Sidebar */}
+      <aside className={`flex flex-col border-r border-[#ded2bd] bg-[#fffaf0] transition-all duration-300 shrink-0 ${isSidebarOpen ? "w-[340px]" : "w-0 overflow-hidden border-none"}`}>
+        <div className="flex-1 overflow-y-auto flex flex-col w-[340px]">
+          <header className="flex items-center justify-between p-4 border-b border-[#eadfc9] shrink-0">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#cc2f2f] text-white shadow-sm">
                 <Gift size={22} />
@@ -717,9 +725,8 @@ export default function Home() {
               </button>
             ) : null}
           </header>
-
-          <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[250px_minmax(390px,0.88fr)_minmax(360px,1.12fr)]">
-            <nav className="border-r border-[#eadfc9] bg-[#f8efe0] p-4">
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            <nav className="bg-transparent border-b border-[#eadfc9] p-4">
               <button
                 type="button"
                 onClick={() => void startNewConversation()}
@@ -754,440 +761,8 @@ export default function Home() {
                 ) : null}
               </div>
             </nav>
-            <section className="flex min-h-[58vh] flex-col border-r border-[#eadfc9]">
-              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-8">
-                {messages.map((message) => (
-                  <article
-                    key={message.id}
-                    className={`max-w-[88%] rounded-lg px-4 py-3 shadow-sm ${
-                      message.role === "assistant"
-                        ? "bg-white text-[#2c261f]"
-                        : "ml-auto bg-[#1f4f4a] text-white"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
-                  </article>
-                ))}
-                {isSending ? (
-                  <div className="flex max-w-[220px] items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-[#6c5d4a] shadow-sm">
-                    <Loader2 size={16} className="animate-spin" />
-                    Searching Kapruka...
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="border-t border-[#eadfc9] bg-[#fffaf0] p-4 sm:p-5">
-                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-                  {STARTERS.map((starter) => (
-                    <button
-                      key={starter}
-                      type="button"
-                      onClick={() => void sendMessage(starter)}
-                      className="shrink-0 rounded-lg border border-[#e3d2b6] bg-white px-3 py-2 text-left text-xs font-medium text-[#5b4a35] transition hover:border-[#cc2f2f] hover:text-[#cc2f2f]"
-                    >
-                      {starter}
-                    </button>
-                  ))}
-                </div>
-                <form onSubmit={handleSubmit} className="flex gap-2">
-                  <input
-                    ref={inputRef}
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    className="h-12 min-w-0 flex-1 rounded-lg border border-[#dcc8a8] bg-white px-4 text-sm outline-none transition focus:border-[#cc2f2f] focus:ring-4 focus:ring-[#cc2f2f]/10"
-                    placeholder="Ask for a gift, occasion, city, date, or budget..."
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSending}
-                    className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#cc2f2f] text-white transition hover:bg-[#a92727] disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label="Send message"
-                  >
-                    {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                  </button>
-                </form>
-              </div>
-            </section>
-
-            <section className="min-h-[58vh] overflow-y-auto bg-[#f8efe0] px-5 py-5 sm:px-8">
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-semibold text-[#85653a]">
-                    <Search size={16} />
-                    Curated Finds
-                  </p>
-                  <h2 className="text-2xl font-semibold">Gift shelf</h2>
-                </div>
-                {delivery ? (
-                  <div className="rounded-lg border border-[#c7d8cf] bg-[#eef8f2] px-3 py-2 text-xs text-[#24624f]">
-                    <MapPin size={14} className="mb-1 inline" /> Delivery checked
-                  </div>
-                ) : null}
-              </div>
-
-              {products.length ? (
-                <>
-                  {agentInsights ? (
-                    <section className="mb-5">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#85653a]">Agent decisions</p>
-                          <h3 className="text-lg font-semibold">Active agents</h3>
-                        </div>
-                        <a
-                          href="/agents"
-                          className="flex items-center gap-1 rounded-md border border-[#d8c5a7] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#5d5144] transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
-                        >
-                          <ExternalLink size={12} />
-                          Inspector
-                        </a>
-                      </div>
-
-                      <div className="grid gap-3">
-                        {/* ── Bundle Builder ── */}
-                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
-                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1f4f4a]/10">
-                              <Blocks size={16} className="text-[#1f4f4a]" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-[#1d1a16]">Bundle Builder</p>
-                              <p className="text-xs text-[#85653a]">
-                                {agentInsights.bundle ? `${agentInsights.bundle.itemIds.length} items curated` : "No bundle yet"}
-                              </p>
-                            </div>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                agentInsights.bundle
-                                  ? "bg-[#e8f5f1] text-[#1f7a55]"
-                                  : "bg-[#f0e4cc] text-[#85653a]"
-                              }`}
-                            >
-                              {agentInsights.bundle ? "active" : "idle"}
-                            </span>
-                          </div>
-                          {agentInsights.bundle ? (
-                            <div className="px-4 py-3">
-                              <p className="text-sm font-semibold text-[#1d1a16]">{agentInsights.bundle.title}</p>
-                              <p className="mt-1 text-xs text-[#756650]">{agentInsights.bundle.rationale}</p>
-                              <div className="mt-3 space-y-1.5">
-                                {bundleProductNames.map((name, i) => (
-                                  <div key={i} className="flex items-center gap-2 text-xs">
-                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f4f4a]" />
-                                    <span className="flex-1 truncate text-[#3a3028]">{name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                              {agentInsights.bundle.missingAddons.length > 0 && (
-                                <p className="mt-2 text-xs text-[#a06030]">
-                                  Could add: {agentInsights.bundle.missingAddons.join(", ")}
-                                </p>
-                              )}
-                              <div className="mt-3 flex items-center justify-between">
-                                <span className="text-sm font-bold text-[#1f4f4a]">
-                                  {formatMoney(agentInsights.bundle.total, agentInsights.bundle.currency)}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    agentInsights.bundle!.itemIds.forEach((id) => {
-                                      const product = products.find((p) => p.id === id);
-                                      if (product) addToCart(product);
-                                    });
-                                  }}
-                                  className="flex items-center gap-1.5 rounded-lg bg-[#1f4f4a] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#173d39]"
-                                >
-                                  <Plus size={12} />
-                                  Add bundle
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="px-4 py-3 text-xs text-[#9a8878]">
-                              Ask for a gift — the Bundle Builder will curate items from the shelf.
-                            </p>
-                          )}
-                        </div>
-
-                        {/* ── Checkout Readiness ── */}
-                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
-                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#cc2f2f]/10">
-                              <ShieldCheck size={16} className="text-[#cc2f2f]" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-[#1d1a16]">Checkout Readiness</p>
-                              <p className="text-xs text-[#85653a]">{agentInsights.checkoutReadiness.nextAction}</p>
-                            </div>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                agentInsights.checkoutReadiness.status === "ready"
-                                  ? "bg-[#e8f5f1] text-[#1f7a55]"
-                                  : agentInsights.checkoutReadiness.status === "needs_details"
-                                    ? "bg-[#fff3cd] text-[#856404]"
-                                    : "bg-[#fde8e8] text-[#842029]"
-                              }`}
-                            >
-                              {agentInsights.checkoutReadiness.status.replace("_", " ")}
-                            </span>
-                          </div>
-                          <div className="px-4 py-3">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#756650]">Readiness score</span>
-                              <span className="font-bold text-[#1d1a16]">{agentInsights.checkoutReadiness.score}%</span>
-                            </div>
-                            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#f0e4cc]">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${agentInsights.checkoutReadiness.score}%`,
-                                  background:
-                                    agentInsights.checkoutReadiness.score >= 80
-                                      ? "#1f7a55"
-                                      : agentInsights.checkoutReadiness.score >= 50
-                                        ? "#d97706"
-                                        : "#cc2f2f",
-                                }}
-                              />
-                            </div>
-                            {agentInsights.checkoutReadiness.missing.length > 0 && (
-                              <ul className="mt-3 space-y-1">
-                                {agentInsights.checkoutReadiness.missing.map((item) => (
-                                  <li key={item} className="flex items-center gap-2 text-xs text-[#9b3e25]">
-                                    <CircleDot size={11} className="shrink-0" />
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                            {agentInsights.checkoutReadiness.warnings.length > 0 && (
-                              <ul className="mt-2 space-y-1">
-                                {agentInsights.checkoutReadiness.warnings.map((warning) => (
-                                  <li key={warning} className="flex items-start gap-2 text-xs text-[#a06030]">
-                                    <AlertTriangle size={11} className="mt-0.5 shrink-0" />
-                                    {warning}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                            {agentInsights.checkoutReadiness.status === "ready" && (
-                              <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#1f7a55]">
-                                <CheckCircle2 size={13} />
-                                Ready to create checkout link
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* ── Substitution Agent ── */}
-                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
-                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#7c3aed]/10">
-                              <Shuffle size={16} className="text-[#7c3aed]" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-[#1d1a16]">Substitution Agent</p>
-                              <p className="text-xs text-[#85653a]">
-                                {agentInsights.substitutions.length
-                                  ? `${agentInsights.substitutions.length} substitution${agentInsights.substitutions.length > 1 ? "s" : ""} found`
-                                  : "All products available"}
-                              </p>
-                            </div>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                agentInsights.substitutions.length
-                                  ? "bg-[#f3e8ff] text-[#7c3aed]"
-                                  : "bg-[#e8f5f1] text-[#1f7a55]"
-                              }`}
-                            >
-                              {agentInsights.substitutions.length ? "flagged" : "clear"}
-                            </span>
-                          </div>
-                          {agentInsights.substitutions.length > 0 ? (
-                            <div className="divide-y divide-[#f0e4cc] px-4">
-                              {agentInsights.substitutions.slice(0, 2).map((sub, i) => (
-                                <div key={i} className="py-3">
-                                  <p className="text-xs text-[#9b3e25]">{sub.reason}</p>
-                                  <div className="mt-2 space-y-1.5">
-                                    {sub.alternatives.slice(0, 3).map((alt) => (
-                                      <div key={alt.id} className="flex items-center justify-between gap-2">
-                                        <span className="min-w-0 truncate text-xs text-[#3a3028]">{alt.name}</span>
-                                        <div className="flex shrink-0 items-center gap-1.5">
-                                          <span className="text-xs font-semibold text-[#1f4f4a]">{formatPrice(alt)}</span>
-                                          <button
-                                            type="button"
-                                            onClick={() => addToCart(alt)}
-                                            className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1f4f4a] text-white transition hover:bg-[#173d39]"
-                                            aria-label={`Add ${alt.name} to cart`}
-                                          >
-                                            <Plus size={11} />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="px-4 py-3 text-xs text-[#9a8878]">
-                              All shelf items are in-stock and within budget. No swaps needed.
-                            </p>
-                          )}
-                        </div>
-
-                        {/* ── Recipient Memory ── */}
-                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
-                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#d97706]/10">
-                              <BookUser size={16} className="text-[#d97706]" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-[#1d1a16]">Recipient Memory</p>
-                              <p className="text-xs text-[#85653a]">
-                                {agentInsights.recipientMemory ? `Profile for ${agentInsights.recipientMemory.displayName}` : "No profile yet"}
-                              </p>
-                            </div>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                agentInsights.recipientMemory
-                                  ? "bg-[#fef3c7] text-[#92400e]"
-                                  : "bg-[#f0e4cc] text-[#85653a]"
-                              }`}
-                            >
-                              {agentInsights.recipientMemory ? "remembered" : "new"}
-                            </span>
-                          </div>
-                          {agentInsights.recipientMemory ? (
-                            <div className="px-4 py-3">
-                              <p className="text-sm font-semibold text-[#1d1a16]">{agentInsights.recipientMemory.displayName}</p>
-                              {agentInsights.recipientMemory.preferredCategories.length > 0 && (
-                                <div className="mt-2">
-                                  <p className="mb-1.5 text-xs text-[#756650]">Likes</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {agentInsights.recipientMemory.preferredCategories.slice(0, 6).map((cat) => (
-                                      <span key={cat} className="rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-xs font-medium text-[#92400e]">
-                                        {cat}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {agentInsights.recipientMemory.occasions.filter(Boolean).length > 0 && (
-                                <div className="mt-2">
-                                  <p className="mb-1.5 text-xs text-[#756650]">Occasions</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {agentInsights.recipientMemory.occasions.filter(Boolean).slice(0, 4).map((occ) => (
-                                      <span key={occ} className="rounded-full bg-[#e8f5f1] px-2.5 py-0.5 text-xs font-medium text-[#1f7a55]">
-                                        {occ}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {agentInsights.recipientMemory.deliveryCities.filter(Boolean).length > 0 && (
-                                <div className="mt-2 flex items-center gap-1.5 text-xs text-[#756650]">
-                                  <MapPin size={11} />
-                                  {agentInsights.recipientMemory.deliveryCities.filter(Boolean).join(", ")}
-                                </div>
-                              )}
-                              {(agentInsights.recipientMemory.minBudget || agentInsights.recipientMemory.maxBudget) && (
-                                <div className="mt-1 text-xs text-[#756650]">
-                                  Budget range:{" "}
-                                  <span className="font-semibold text-[#1d1a16]">
-                                    {agentInsights.recipientMemory.minBudget
-                                      ? formatMoney(agentInsights.recipientMemory.minBudget)
-                                      : ""}
-                                    {agentInsights.recipientMemory.minBudget && agentInsights.recipientMemory.maxBudget ? " – " : ""}
-                                    {agentInsights.recipientMemory.maxBudget
-                                      ? formatMoney(agentInsights.recipientMemory.maxBudget)
-                                      : ""}
-                                  </span>
-                                </div>
-                              )}
-                              {agentInsights.recipientMemory.notes.filter(Boolean).length > 0 && (
-                                <div className="mt-2 space-y-1">
-                                  {agentInsights.recipientMemory.notes.filter(Boolean).slice(0, 3).map((note) => (
-                                    <div key={note} className="flex items-start gap-1.5 text-xs text-[#756650]">
-                                      <ChevronRight size={10} className="mt-0.5 shrink-0 text-[#85653a]" />
-                                      {note}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="px-4 py-3 text-xs text-[#9a8878]">
-                              Name a specific recipient in your request and Kavi will remember their preferences.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </section>
-                  ) : null}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                  {products.map((product, index) => (
-                    <article key={product.id} className="overflow-hidden rounded-lg border border-[#e1cfaf] bg-white shadow-sm">
-                      <div className="aspect-[4/3] bg-[#efe1c9]">
-                        {product.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-[#8a7356]">
-                            <Gift size={34} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-3 p-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="rounded-md bg-[#f4d9c8] px-2 py-1 text-xs font-semibold text-[#9b3e25]">
-                            {index === 0 ? "Best match" : product.category?.name ?? "Gift"}
-                          </span>
-                          <span className="text-sm font-bold text-[#1f4f4a]">{formatPrice(product)}</span>
-                        </div>
-                        <div>
-                          <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5">{product.name}</h3>
-                          <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#6b5d4c]">{product.summary}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => addToCart(product)}
-                            className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-[#1f4f4a] px-3 text-sm font-semibold text-white transition hover:bg-[#173d39]"
-                          >
-                            <ShoppingBag size={15} />
-                            Add
-                          </button>
-                          {product.url ? (
-                            <a
-                              href={product.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex h-10 items-center justify-center rounded-lg border border-[#d8c5a7] px-3 text-sm font-semibold text-[#5f503d] transition hover:border-[#1f4f4a]"
-                            >
-                              View
-                            </a>
-                          ) : null}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                  </div>
-                </>
-              ) : (
-                <div className="flex min-h-[420px] flex-col items-center justify-center rounded-lg border border-dashed border-[#d7c5aa] bg-[#fffaf0] p-8 text-center">
-                  <MessageCircle size={36} className="text-[#cc2f2f]" />
-                  <h2 className="mt-4 text-xl font-semibold">Start with a real shopping need</h2>
-                  <p className="mt-2 max-w-md text-sm leading-6 text-[#6d5e4b]">
-                    Ask for a recipient, occasion, delivery city, and budget. The agent will search live Kapruka products and fill this shelf.
-                  </p>
-                </div>
-              )}
-            </section>
-          </div>
-        </section>
-
-        <aside className="flex min-h-screen flex-col bg-[#1d1a16] text-white">
+            <div className="mt-auto">
+              <aside className="flex  flex-col bg-[#1d1a16] text-white">
           <div className="border-b border-white/10 p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -1592,3 +1167,587 @@ export default function Home() {
     </main>
   );
 }
+
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Chat Area */}
+      <section className="flex flex-1 flex-col relative transition-all duration-300">
+        <header className="absolute top-0 left-0 right-0 p-4 z-10 flex items-center justify-between pointer-events-none">
+          <div className="pointer-events-auto">
+            <button type="button" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a]">
+              <Menu size={20} />
+            </button>
+          </div>
+          <div className="pointer-events-auto flex items-center gap-2">
+            <button type="button" onClick={() => setIsDrawerOpen(!isDrawerOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a]">
+              {isDrawerOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+            </button>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto pt-20 pb-40">
+          <div className="mx-auto max-w-4xl px-4 flex flex-col gap-6">
+            <div className="flex flex-col items-center justify-center mt-8 mb-12">
+               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#cc2f2f] text-white shadow-md mb-4">
+                 <Gift size={28} />
+               </div>
+               <h1 className="text-3xl font-bold text-[#2c261f]">Ask away!</h1>
+               <p className="mt-2 text-[#6c5d4a]">I'm Kavi, your Kapruka gift concierge.</p>
+            </div>
+            <div className="space-y-6">
+                {messages.map((message, idx) => {
+                  const isLastAssistantMessage = message.role === "assistant" && idx === messages.length - 1;
+                  return (
+                  <div key={message.id} className={`flex flex-col ${message.role === 'assistant' ? 'items-start' : 'items-end'}`}>
+                    <article
+                      className={`max-w-[88%] rounded-lg px-4 py-3 shadow-sm ${
+                        message.role === "assistant"
+                          ? "bg-white text-[#2c261f]"
+                          : "bg-[#1f4f4a] text-white"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
+                    </article>
+                    {isLastAssistantMessage && products.length > 0 && (
+                      <div className="mt-4 flex gap-3 w-full overflow-x-auto pb-4 pl-1 scrollbar-hide">
+                         {products.slice(0, 4).map((product, pIdx) => (
+                           <div key={product.id} className="min-w-[220px] w-[220px] shrink-0 overflow-hidden rounded-lg border border-[#e1cfaf] bg-white shadow-sm flex flex-col transition hover:shadow-md">
+                             <div className="aspect-[4/3] bg-[#efe1c9]">
+                               {product.image_url ? (
+                                 <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+                               ) : (
+                                 <div className="flex h-full items-center justify-center text-[#8a7356]">
+                                   <Gift size={24} />
+                                 </div>
+                               )}
+                             </div>
+                             <div className="p-3 flex-1 flex flex-col">
+                               <div className="flex items-start justify-between gap-2 mb-2">
+                                 <span className="rounded-md bg-[#f4d9c8] px-1.5 py-0.5 text-[10px] font-semibold text-[#9b3e25] truncate">
+                                   {pIdx === 0 ? "Best match" : product.category?.name ?? "Gift"}
+                                 </span>
+                                 <span className="text-xs font-bold text-[#1f4f4a]">{formatPrice(product)}</span>
+                               </div>
+                               <h3 className="line-clamp-2 text-xs font-semibold leading-4 mb-3 flex-1">{product.name}</h3>
+                               <button
+                                 type="button"
+                                 onClick={() => addToCart(product)}
+                                 className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md bg-[#1f4f4a] px-2 text-xs font-semibold text-white transition hover:bg-[#173d39]"
+                               >
+                                 <ShoppingBag size={14} />
+                                 Add
+                               </button>
+                             </div>
+                           </div>
+                         ))}
+                         <button type="button" onClick={() => setIsDrawerOpen(true)} className="min-w-[140px] shrink-0 flex flex-col items-center justify-center rounded-lg border border-dashed border-[#d8c5a7] bg-[#fffaf0] text-[#5f503d] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition">
+                           <ChevronRight size={28} className="mb-2" />
+                           <span className="text-sm font-semibold">View all {products.length}</span>
+                         </button>
+                      </div>
+                    )}
+                  </div>
+                )})}
+                {isSending ? (
+                  <div className="flex max-w-[220px] items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-[#6c5d4a] shadow-sm">
+                    <Loader2 size={16} className="animate-spin" />
+                    Searching Kapruka...
+                  </div>
+                ) : null}
+              </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 left-0 right-0 px-4 pointer-events-none">
+          <div className="mx-auto max-w-4xl pointer-events-auto">
+             <div className="bg-white rounded-2xl shadow-xl border border-[#eadfc9] overflow-hidden">
+               <div className="p-3">
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                  {STARTERS.map((starter) => (
+                    <button
+                      key={starter}
+                      type="button"
+                      onClick={() => void sendMessage(starter)}
+                      className="shrink-0 rounded-lg border border-[#e3d2b6] bg-white px-3 py-2 text-left text-xs font-medium text-[#5b4a35] transition hover:border-[#cc2f2f] hover:text-[#cc2f2f]"
+                    >
+                      {starter}
+                    </button>
+                  ))}
+                </div>
+                <form onSubmit={handleSubmit} className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    className="h-12 min-w-0 flex-1 rounded-lg border border-[#dcc8a8] bg-white px-4 text-sm outline-none transition focus:border-[#cc2f2f] focus:ring-4 focus:ring-[#cc2f2f]/10"
+                    placeholder="Ask for a gift, occasion, city, date, or budget..."
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSending}
+                    className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#cc2f2f] text-white transition hover:bg-[#a92727] disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label="Send message"
+                  >
+                    {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  </button>
+                </form>
+              </div>
+            </section>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Right Drawer */}
+      <aside className={`bg-[#fffaf0] border-l border-[#ded2bd] transition-all duration-300 shrink-0 ${isDrawerOpen ? "w-[450px]" : "w-0 overflow-hidden border-none"}`}>
+        <div className="h-full overflow-y-auto w-[450px]">
+          <section className=" overflow-y-auto bg-[#f8efe0] px-5 py-5 sm:px-8">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-semibold text-[#85653a]">
+                    <Search size={16} />
+                    Curated Finds
+                  </p>
+                  <h2 className="text-2xl font-semibold">Gift shelf</h2>
+                </div>
+                {delivery ? (
+                  <div className="rounded-lg border border-[#c7d8cf] bg-[#eef8f2] px-3 py-2 text-xs text-[#24624f]">
+                    <MapPin size={14} className="mb-1 inline" /> Delivery checked
+                  </div>
+                ) : null}
+              </div>
+
+              {products.length ? (
+                <>
+                  {agentInsights ? (
+                    <section className="mb-5">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#85653a]">Agent decisions</p>
+                          <h3 className="text-lg font-semibold">Active agents</h3>
+                        </div>
+                        <a
+                          href="/agents"
+                          className="flex items-center gap-1 rounded-md border border-[#d8c5a7] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#5d5144] transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
+                        >
+                          <ExternalLink size={12} />
+                          Inspector
+                        </a>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {/* ── Bundle Builder ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1f4f4a]/10">
+                              <Blocks size={16} className="text-[#1f4f4a]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Bundle Builder</p>
+                              <p className="text-xs text-[#85653a]">
+                                {agentInsights.bundle ? `${agentInsights.bundle.itemIds.length} items curated` : "No bundle yet"}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.bundle
+                                  ? "bg-[#e8f5f1] text-[#1f7a55]"
+                                  : "bg-[#f0e4cc] text-[#85653a]"
+                              }`}
+                            >
+                              {agentInsights.bundle ? "active" : "idle"}
+                            </span>
+                          </div>
+                          {agentInsights.bundle ? (
+                            <div className="px-4 py-3">
+                              <p className="text-sm font-semibold text-[#1d1a16]">{agentInsights.bundle.title}</p>
+                              <p className="mt-1 text-xs text-[#756650]">{agentInsights.bundle.rationale}</p>
+                              <div className="mt-3 space-y-1.5">
+                                {bundleProductNames.map((name, i) => (
+                                  <div key={i} className="flex items-center gap-2 text-xs">
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f4f4a]" />
+                                    <span className="flex-1 truncate text-[#3a3028]">{name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {agentInsights.bundle.missingAddons.length > 0 && (
+                                <p className="mt-2 text-xs text-[#a06030]">
+                                  Could add: {agentInsights.bundle.missingAddons.join(", ")}
+                                </p>
+                              )}
+                              <div className="mt-3 flex items-center justify-between">
+                                <span className="text-sm font-bold text-[#1f4f4a]">
+                                  {formatMoney(agentInsights.bundle.total, agentInsights.bundle.currency)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    agentInsights.bundle!.itemIds.forEach((id) => {
+                                      const product = products.find((p) => p.id === id);
+                                      if (product) addToCart(product);
+                                    });
+                                  }}
+                                  className="flex items-center gap-1.5 rounded-lg bg-[#1f4f4a] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#173d39]"
+                                >
+                                  <Plus size={12} />
+                                  Add bundle
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="px-4 py-3 text-xs text-[#9a8878]">
+                              Ask for a gift — the Bundle Builder will curate items from the shelf.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* ── Checkout Readiness ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#cc2f2f]/10">
+                              <ShieldCheck size={16} className="text-[#cc2f2f]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Checkout Readiness</p>
+                              <p className="text-xs text-[#85653a]">{agentInsights.checkoutReadiness.nextAction}</p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.checkoutReadiness.status === "ready"
+                                  ? "bg-[#e8f5f1] text-[#1f7a55]"
+                                  : agentInsights.checkoutReadiness.status === "needs_details"
+                                    ? "bg-[#fff3cd] text-[#856404]"
+                                    : "bg-[#fde8e8] text-[#842029]"
+                              }`}
+                            >
+                              {agentInsights.checkoutReadiness.status.replace("_", " ")}
+                            </span>
+                          </div>
+                          <div className="px-4 py-3">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-[#756650]">Readiness score</span>
+                              <span className="font-bold text-[#1d1a16]">{agentInsights.checkoutReadiness.score}%</span>
+                            </div>
+                            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#f0e4cc]">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${agentInsights.checkoutReadiness.score}%`,
+                                  background:
+                                    agentInsights.checkoutReadiness.score >= 80
+                                      ? "#1f7a55"
+                                      : agentInsights.checkoutReadiness.score >= 50
+                                        ? "#d97706"
+                                        : "#cc2f2f",
+                                }}
+                              />
+                            </div>
+                            {agentInsights.checkoutReadiness.missing.length > 0 && (
+                              <ul className="mt-3 space-y-1">
+                                {agentInsights.checkoutReadiness.missing.map((item) => (
+                                  <li key={item} className="flex items-center gap-2 text-xs text-[#9b3e25]">
+                                    <CircleDot size={11} className="shrink-0" />
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            {agentInsights.checkoutReadiness.warnings.length > 0 && (
+                              <ul className="mt-2 space-y-1">
+                                {agentInsights.checkoutReadiness.warnings.map((warning) => (
+                                  <li key={warning} className="flex items-start gap-2 text-xs text-[#a06030]">
+                                    <AlertTriangle size={11} className="mt-0.5 shrink-0" />
+                                    {warning}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            {agentInsights.checkoutReadiness.status === "ready" && (
+                              <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#1f7a55]">
+                                <CheckCircle2 size={13} />
+                                Ready to create checkout link
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* ── Substitution Agent ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#7c3aed]/10">
+                              <Shuffle size={16} className="text-[#7c3aed]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Substitution Agent</p>
+                              <p className="text-xs text-[#85653a]">
+                                {agentInsights.substitutions.length
+                                  ? `${agentInsights.substitutions.length} substitution${agentInsights.substitutions.length > 1 ? "s" : ""} found`
+                                  : "All products available"}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.substitutions.length
+                                  ? "bg-[#f3e8ff] text-[#7c3aed]"
+                                  : "bg-[#e8f5f1] text-[#1f7a55]"
+                              }`}
+                            >
+                              {agentInsights.substitutions.length ? "flagged" : "clear"}
+                            </span>
+                          </div>
+                          {agentInsights.substitutions.length > 0 ? (
+                            <div className="divide-y divide-[#f0e4cc] px-4">
+                              {agentInsights.substitutions.slice(0, 2).map((sub, i) => (
+                                <div key={i} className="py-3">
+                                  <p className="text-xs text-[#9b3e25]">{sub.reason}</p>
+                                  <div className="mt-2 space-y-1.5">
+                                    {sub.alternatives.slice(0, 3).map((alt) => (
+                                      <div key={alt.id} className="flex items-center justify-between gap-2">
+                                        <span className="min-w-0 truncate text-xs text-[#3a3028]">{alt.name}</span>
+                                        <div className="flex shrink-0 items-center gap-1.5">
+                                          <span className="text-xs font-semibold text-[#1f4f4a]">{formatPrice(alt)}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => addToCart(alt)}
+                                            className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1f4f4a] text-white transition hover:bg-[#173d39]"
+                                            aria-label={`Add ${alt.name} to cart`}
+                                          >
+                                            <Plus size={11} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="px-4 py-3 text-xs text-[#9a8878]">
+                              All shelf items are in-stock and within budget. No swaps needed.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* ── Recipient Memory ── */}
+                        <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
+                          <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#d97706]/10">
+                              <BookUser size={16} className="text-[#d97706]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#1d1a16]">Recipient Memory</p>
+                              <p className="text-xs text-[#85653a]">
+                                {agentInsights.recipientMemory ? `Profile for ${agentInsights.recipientMemory.displayName}` : "No profile yet"}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                agentInsights.recipientMemory
+                                  ? "bg-[#fef3c7] text-[#92400e]"
+                                  : "bg-[#f0e4cc] text-[#85653a]"
+                              }`}
+                            >
+                              {agentInsights.recipientMemory ? "remembered" : "new"}
+                            </span>
+                          </div>
+                          {agentInsights.recipientMemory ? (
+                            <div className="px-4 py-3">
+                              <p className="text-sm font-semibold text-[#1d1a16]">{agentInsights.recipientMemory.displayName}</p>
+                              {agentInsights.recipientMemory.preferredCategories.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="mb-1.5 text-xs text-[#756650]">Likes</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {agentInsights.recipientMemory.preferredCategories.slice(0, 6).map((cat) => (
+                                      <span key={cat} className="rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-xs font-medium text-[#92400e]">
+                                        {cat}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {agentInsights.recipientMemory.occasions.filter(Boolean).length > 0 && (
+                                <div className="mt-2">
+                                  <p className="mb-1.5 text-xs text-[#756650]">Occasions</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {agentInsights.recipientMemory.occasions.filter(Boolean).slice(0, 4).map((occ) => (
+                                      <span key={occ} className="rounded-full bg-[#e8f5f1] px-2.5 py-0.5 text-xs font-medium text-[#1f7a55]">
+                                        {occ}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {agentInsights.recipientMemory.deliveryCities.filter(Boolean).length > 0 && (
+                                <div className="mt-2 flex items-center gap-1.5 text-xs text-[#756650]">
+                                  <MapPin size={11} />
+                                  {agentInsights.recipientMemory.deliveryCities.filter(Boolean).join(", ")}
+                                </div>
+                              )}
+                              {(agentInsights.recipientMemory.minBudget || agentInsights.recipientMemory.maxBudget) && (
+                                <div className="mt-1 text-xs text-[#756650]">
+                                  Budget range:{" "}
+                                  <span className="font-semibold text-[#1d1a16]">
+                                    {agentInsights.recipientMemory.minBudget
+                                      ? formatMoney(agentInsights.recipientMemory.minBudget)
+                                      : ""}
+                                    {agentInsights.recipientMemory.minBudget && agentInsights.recipientMemory.maxBudget ? " – " : ""}
+                                    {agentInsights.recipientMemory.maxBudget
+                                      ? formatMoney(agentInsights.recipientMemory.maxBudget)
+                                      : ""}
+                                  </span>
+                                </div>
+                              )}
+                              {agentInsights.recipientMemory.notes.filter(Boolean).length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {agentInsights.recipientMemory.notes.filter(Boolean).slice(0, 3).map((note) => (
+                                    <div key={note} className="flex items-start gap-1.5 text-xs text-[#756650]">
+                                      <ChevronRight size={10} className="mt-0.5 shrink-0 text-[#85653a]" />
+                                      {note}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="px-4 py-3 text-xs text-[#9a8878]">
+                              Name a specific recipient in your request and Kavi will remember their preferences.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                  {products.map((product, index) => (
+                    <article key={product.id} className="overflow-hidden rounded-lg border border-[#e1cfaf] bg-white shadow-sm">
+                      <div className="aspect-[4/3] bg-[#efe1c9]">
+                        {product.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-[#8a7356]">
+                            <Gift size={34} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-3 p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="rounded-md bg-[#f4d9c8] px-2 py-1 text-xs font-semibold text-[#9b3e25]">
+                            {index === 0 ? "Best match" : product.category?.name ?? "Gift"}
+                          </span>
+                          <span className="text-sm font-bold text-[#1f4f4a]">{formatPrice(product)}</span>
+                        </div>
+                        <div>
+                          <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5">{product.name}</h3>
+                          <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#6b5d4c]">{product.summary}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => addToCart(product)}
+                            className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-[#1f4f4a] px-3 text-sm font-semibold text-white transition hover:bg-[#173d39]"
+                          >
+                            <ShoppingBag size={15} />
+                            Add
+                          </button>
+                          {product.url ? (
+                            <a
+                              href={product.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex h-10 items-center justify-center rounded-lg border border-[#d8c5a7] px-3 text-sm font-semibold text-[#5f503d] transition hover:border-[#1f4f4a]"
+                            >
+                              View
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex min-h-[420px] flex-col items-center justify-center rounded-lg border border-dashed border-[#d7c5aa] bg-[#fffaf0] p-8 text-center">
+                  <MessageCircle size={36} className="text-[#cc2f2f]" />
+                  <h2 className="mt-4 text-xl font-semibold">Start with a real shopping need</h2>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-[#6d5e4b]">
+                    Ask for a recipient, occasion, delivery city, and budget. The agent will search live Kapruka products and fill this shelf.
+                  </p>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+      </aside>
+
+      {checkoutSuccess ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+          <section className="w-full max-w-md rounded-lg bg-[#fffaf0] p-5 text-[#1d1a16] shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-[#1f7a55]">Checkout link ready</p>
+                <h2 className="mt-1 text-2xl font-semibold">Order created successfully</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCheckoutSuccess(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#dfcdb0] bg-white text-[#5d5144] transition hover:border-[#cc2f2f] hover:text-[#cc2f2f]"
+                aria-label="Close checkout summary"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-[#e2d1b7] bg-white p-4">
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#6b5d4c]">Items total</span>
+                  <span className="font-semibold">
+                    {formatMoney(checkoutSuccess.summary.items_total, checkoutSuccess.summary.currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#6b5d4c]">Shipping price</span>
+                  <span className="font-semibold">
+                    {formatMoney(checkoutSuccess.summary.delivery_fee, checkoutSuccess.summary.currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-[#eadfc9] pt-3">
+                  <span className="font-semibold">Grand total</span>
+                  <span className="text-xl font-bold text-[#1f4f4a]">
+                    {formatMoney(checkoutSuccess.summary.grand_total, checkoutSuccess.summary.currency)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg bg-[#f8efe0] p-3 text-xs leading-5 text-[#6b5d4c]">
+              <p>
+                Checkout ref: <span className="font-semibold text-[#1d1a16]">{checkoutSuccess.order_ref}</span>
+              </p>
+              <p>
+                Link expires:{" "}
+                <span className="font-semibold text-[#1d1a16]">
+                  {new Date(checkoutSuccess.expires_at).toLocaleString("en-LK")}
+                </span>
+              </p>
+              <p className="mt-2">
+                After payment, use the Kapruka order number from the confirmation email to track delivery.
+              </p>
+            </div>
+
+            <a
+              href={checkoutSuccess.checkout_url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#cc2f2f] font-semibold text-white transition hover:bg-[#a92727]"
+            >
+              <ShoppingBag size={17} />
+              Go to checkout
+            </a>
+          </section>
+        </div>
+    </main>
