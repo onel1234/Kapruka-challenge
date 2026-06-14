@@ -543,6 +543,7 @@ export default function Home() {
   }
 
   function addToCart(product: Product) {
+    setIsSidebarOpen(true);
     setCart((current) => {
       const existing = current.find((item) => item.product.id === product.id);
       if (existing) {
