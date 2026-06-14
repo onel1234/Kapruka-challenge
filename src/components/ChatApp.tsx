@@ -14,12 +14,15 @@ import {
   Heart,
   Loader2,
   MapPin,
+  Menu,
   MessageCircle,
   Minus,
   PackageCheck,
   Plus,
   RefreshCw,
   LogOut,
+  PanelRightClose,
+  PanelRightOpen,
   Search,
   Send,
   ShieldCheck,
@@ -29,9 +32,6 @@ import {
   Shuffle,
   Trash2,
   X,
-  Menu,
-  PanelRightClose,
-  PanelRightOpen,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -72,7 +72,7 @@ type ConversationSummary = {
 const STARTERS = [
   "Birthday gift for my amma in Kandy under Rs. 10,000",
   "Anniversary surprise with flowers and chocolate for Colombo tomorrow",
-  "මට අම්මාට birthday gift එකක් ඕනේ",
+  "α╢╕α╢º α╢àα╢╕α╖èα╢╕α╖Åα╢º birthday gift α╢æα╢Üα╢Üα╖è α╢òα╢▒α╖Ü",
   "Mata ammata mal gift ekak one Rs. 10,000 aduwen",
   "Amma ku pookal venum Kandy ku Rs. 10,000 kulla",
   "Build a cute gift bundle for a sister who loves chocolate",
@@ -80,9 +80,9 @@ const STARTERS = [
 
 const LANGUAGE_OPTIONS: Array<{ value: AppLanguage; label: string }> = [
   { value: "english", label: "English" },
-  { value: "sinhala", label: "සිංහල" },
+  { value: "sinhala", label: "α╖âα╖Æα╢éα╖äα╢╜" },
   { value: "singlish", label: "Singlish" },
-  { value: "tamil", label: "தமிழ்" },
+  { value: "tamil", label: "α«ñα««α«┐α«┤α»ì" },
   { value: "tanglish", label: "Tanglish" },
 ];
 
@@ -109,11 +109,11 @@ const WELCOME_BY_LANGUAGE: Record<AppLanguage, string> = {
   english:
     "Ayubowan. I am Kavi, your Kapruka gift concierge. Tell me who the gift is for, the occasion, budget, and delivery city. I will curate options and help you check out.",
   sinhala:
-    "ආයුබෝවන්. මම කවි, ඔබේ Kapruka තෑගි සහායකයා. තෑග්ග කාටද, අවස්ථාව, අයවැය සහ බෙදාහැරීමේ නගරය කියන්න. මම සුදුසු විකල්ප තෝරා දෙන්නම්.",
+    "α╢åα╢║α╖öα╢╢α╖¥α╖Çα╢▒α╖è. α╢╕α╢╕ α╢Üα╖Çα╖Æ, α╢öα╢╢α╖Ü Kapruka α╢¡α╖æα╢£α╖Æ α╖âα╖äα╖Åα╢║α╢Üα╢║α╖Å. α╢¡α╖æα╢£α╖èα╢£ α╢Üα╖Åα╢ºα╢», α╢àα╖Çα╖âα╖èα╢«α╖Åα╖Ç, α╢àα╢║α╖Çα╖Éα╢║ α╖âα╖ä α╢╢α╖Öα╢»α╖Åα╖äα╖Éα╢╗α╖ôα╢╕α╖Ü α╢▒α╢£α╢╗α╢║ α╢Üα╖Æα╢║α╢▒α╖èα╢▒. α╢╕α╢╕ α╖âα╖öα╢»α╖öα╖âα╖ö α╖Çα╖Æα╢Üα╢╜α╖èα╢┤ α╢¡α╖¥α╢╗α╖Å α╢»α╖Öα╢▒α╖èα╢▒α╢╕α╖è.",
   singlish:
     "Ayubowan. Mama Kavi, oyage Kapruka gift concierge. Gift eka kaatada, occasion eka, budget eka, delivery city eka kiyanna; mama hondama options hoyala checkout wenakan help karannam.",
   tamil:
-    "வணக்கம். நான் கவி, உங்கள் Kapruka பரிசு உதவியாளர். பரிசு யாருக்காக, நிகழ்வு, செலவு வரம்பு, விநியோக நகரம் ஆகியவற்றை சொல்லுங்கள். பொருத்தமான தேர்வுகளை நான் பரிந்துரைக்கிறேன்.",
+    "α«╡α«úα«òα»ìα«òα««α»ì. α«¿α«╛α«⌐α»ì α«òα«╡α«┐, α«ëα«Öα»ìα«òα«│α»ì Kapruka α«¬α«░α«┐α«Üα»ü α«ëα«ñα«╡α«┐α«»α«╛α«│α«░α»ì. α«¬α«░α«┐α«Üα»ü α«»α«╛α«░α»üα«òα»ìα«òα«╛α«ò, α«¿α«┐α«òα«┤α»ìα«╡α»ü, α«Üα»åα«▓α«╡α»ü α«╡α«░α««α»ìα«¬α»ü, α«╡α«┐α«¿α«┐α«»α»ïα«ò α«¿α«òα«░α««α»ì α«åα«òα«┐α«»α«╡α«▒α»ìα«▒α»ê α«Üα»èα«▓α»ìα«▓α»üα«Öα»ìα«òα«│α»ì. α«¬α»èα«░α»üα«ñα»ìα«ñα««α«╛α«⌐ α«ñα»çα«░α»ìα«╡α»üα«òα«│α»ê α«¿α«╛α«⌐α»ì α«¬α«░α«┐α«¿α»ìα«ñα»üα«░α»êα«òα»ìα«òα«┐α«▒α»çα«⌐α»ì.",
   tanglish:
     "Vanakkam. Naan Kavi, unga Kapruka gift concierge. Gift yaarukku, occasion, budget, delivery city sollunga; suitable options thedi checkout varaikum help panren.",
 };
@@ -271,8 +271,6 @@ function mergeReadiness(current: GiftAgentInsights | null, checkoutReadiness: Ch
 export default function Home() {
   const { data: session } = useSession();
   const [selectedLanguage, setSelectedLanguage] = useState<AppLanguage>("english");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -545,7 +543,6 @@ export default function Home() {
   }
 
   function addToCart(product: Product) {
-    setIsSidebarOpen(true);
     setCart((current) => {
       const existing = current.find((item) => item.product.id === product.id);
       if (existing) {
@@ -676,7 +673,7 @@ export default function Home() {
       {/* Sidebar */}
       <aside className={`flex flex-col border-r border-[#ded2bd] bg-[#fffaf0] transition-all duration-300 shrink-0 ${isSidebarOpen ? "w-[340px]" : "w-0 overflow-hidden border-none"}`}>
         <div className="flex-1 overflow-y-auto flex flex-col w-[340px]">
-          <header className="flex items-center justify-between p-4 border-b border-[#eadfc9] shrink-0">
+<header className="flex items-center justify-between p-4 border-b border-[#eadfc9] shrink-0">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#cc2f2f] text-white shadow-sm">
                 <Gift size={22} />
@@ -726,7 +723,7 @@ export default function Home() {
             ) : null}
           </header>
           <div className="flex-1 overflow-y-auto flex flex-col">
-            <nav className="bg-transparent border-b border-[#eadfc9] p-4">
+<nav className="bg-transparent border-b border-[#eadfc9] p-4">
               <button
                 type="button"
                 onClick={() => void startNewConversation()}
@@ -762,7 +759,7 @@ export default function Home() {
               </div>
             </nav>
             <div className="mt-auto">
-              <aside className="flex  flex-col bg-[#1d1a16] text-white">
+<aside className="flex  flex-col bg-[#1d1a16] text-white">
           <div className="border-b border-white/10 p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -1095,79 +1092,6 @@ export default function Home() {
             </form>
           </div>
         </aside>
-      </div>
-      {checkoutSuccess ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
-          <section className="w-full max-w-md rounded-lg bg-[#fffaf0] p-5 text-[#1d1a16] shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-[#1f7a55]">Checkout link ready</p>
-                <h2 className="mt-1 text-2xl font-semibold">Order created successfully</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCheckoutSuccess(null)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#dfcdb0] bg-white text-[#5d5144] transition hover:border-[#cc2f2f] hover:text-[#cc2f2f]"
-                aria-label="Close checkout summary"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="mt-5 rounded-lg border border-[#e2d1b7] bg-white p-4">
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#6b5d4c]">Items total</span>
-                  <span className="font-semibold">
-                    {formatMoney(checkoutSuccess.summary.items_total, checkoutSuccess.summary.currency)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#6b5d4c]">Shipping price</span>
-                  <span className="font-semibold">
-                    {formatMoney(checkoutSuccess.summary.delivery_fee, checkoutSuccess.summary.currency)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between border-t border-[#eadfc9] pt-3">
-                  <span className="font-semibold">Grand total</span>
-                  <span className="text-xl font-bold text-[#1f4f4a]">
-                    {formatMoney(checkoutSuccess.summary.grand_total, checkoutSuccess.summary.currency)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-lg bg-[#f8efe0] p-3 text-xs leading-5 text-[#6b5d4c]">
-              <p>
-                Checkout ref: <span className="font-semibold text-[#1d1a16]">{checkoutSuccess.order_ref}</span>
-              </p>
-              <p>
-                Link expires:{" "}
-                <span className="font-semibold text-[#1d1a16]">
-                  {new Date(checkoutSuccess.expires_at).toLocaleString("en-LK")}
-                </span>
-              </p>
-              <p className="mt-2">
-                After payment, use the Kapruka order number from the confirmation email to track delivery.
-              </p>
-            </div>
-
-            <a
-              href={checkoutSuccess.checkout_url}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#cc2f2f] font-semibold text-white transition hover:bg-[#a92727]"
-            >
-              <ShoppingBag size={17} />
-              Go to checkout
-            </a>
-          </section>
-        </div>
-      ) : null}
-    </main>
-  );
-}
-
             </div>
           </div>
         </div>
@@ -1195,9 +1119,9 @@ export default function Home() {
                  <Gift size={28} />
                </div>
                <h1 className="text-3xl font-bold text-[#2c261f]">Ask away!</h1>
-               <p className="mt-2 text-[#6c5d4a]">I'm Kavi, your Kapruka gift concierge.</p>
+               <p className="mt-2 text-[#6c5d4a]">I&apos;m Kavi, your Kapruka gift concierge.</p>
             </div>
-            <div className="space-y-6">
+<div className="space-y-6">
                 {messages.map((message, idx) => {
                   const isLastAssistantMessage = message.role === "assistant" && idx === messages.length - 1;
                   return (
@@ -1264,7 +1188,7 @@ export default function Home() {
         <div className="absolute bottom-6 left-0 right-0 px-4 pointer-events-none">
           <div className="mx-auto max-w-4xl pointer-events-auto">
              <div className="bg-white rounded-2xl shadow-xl border border-[#eadfc9] overflow-hidden">
-               <div className="p-3">
+<div className="p-3">
                 <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
                   {STARTERS.map((starter) => (
                     <button
@@ -1295,7 +1219,6 @@ export default function Home() {
                   </button>
                 </form>
               </div>
-            </section>
              </div>
           </div>
         </div>
@@ -1304,7 +1227,7 @@ export default function Home() {
       {/* Right Drawer */}
       <aside className={`bg-[#fffaf0] border-l border-[#ded2bd] transition-all duration-300 shrink-0 ${isDrawerOpen ? "w-[450px]" : "w-0 overflow-hidden border-none"}`}>
         <div className="h-full overflow-y-auto w-[450px]">
-          <section className=" overflow-y-auto bg-[#f8efe0] px-5 py-5 sm:px-8">
+<section className=" overflow-y-auto bg-[#f8efe0] px-5 py-5 sm:px-8">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <p className="flex items-center gap-2 text-sm font-semibold text-[#85653a]">
@@ -1339,7 +1262,7 @@ export default function Home() {
                       </div>
 
                       <div className="grid gap-3">
-                        {/* ── Bundle Builder ── */}
+                        {/* ΓöÇΓöÇ Bundle Builder ΓöÇΓöÇ */}
                         <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
                           <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1f4f4a]/10">
@@ -1399,12 +1322,12 @@ export default function Home() {
                             </div>
                           ) : (
                             <p className="px-4 py-3 text-xs text-[#9a8878]">
-                              Ask for a gift — the Bundle Builder will curate items from the shelf.
+                              Ask for a gift ΓÇö the Bundle Builder will curate items from the shelf.
                             </p>
                           )}
                         </div>
 
-                        {/* ── Checkout Readiness ── */}
+                        {/* ΓöÇΓöÇ Checkout Readiness ΓöÇΓöÇ */}
                         <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
                           <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#cc2f2f]/10">
@@ -1474,7 +1397,7 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* ── Substitution Agent ── */}
+                        {/* ΓöÇΓöÇ Substitution Agent ΓöÇΓöÇ */}
                         <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
                           <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#7c3aed]/10">
@@ -1531,7 +1454,7 @@ export default function Home() {
                           )}
                         </div>
 
-                        {/* ── Recipient Memory ── */}
+                        {/* ΓöÇΓöÇ Recipient Memory ΓöÇΓöÇ */}
                         <div className="overflow-hidden rounded-xl border border-[#e1cfaf] bg-white shadow-sm">
                           <div className="flex items-center gap-3 border-b border-[#f0e4cc] bg-[#fffbf5] px-4 py-3">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#d97706]/10">
@@ -1593,7 +1516,7 @@ export default function Home() {
                                     {agentInsights.recipientMemory.minBudget
                                       ? formatMoney(agentInsights.recipientMemory.minBudget)
                                       : ""}
-                                    {agentInsights.recipientMemory.minBudget && agentInsights.recipientMemory.maxBudget ? " – " : ""}
+                                    {agentInsights.recipientMemory.minBudget && agentInsights.recipientMemory.maxBudget ? " ΓÇô " : ""}
                                     {agentInsights.recipientMemory.maxBudget
                                       ? formatMoney(agentInsights.recipientMemory.maxBudget)
                                       : ""}
@@ -1679,11 +1602,10 @@ export default function Home() {
                 </div>
               )}
             </section>
-          </div>
         </div>
       </aside>
 
-      {checkoutSuccess ? (
+{checkoutSuccess ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
           <section className="w-full max-w-md rounded-lg bg-[#fffaf0] p-5 text-[#1d1a16] shadow-2xl">
             <div className="flex items-start justify-between gap-4">
@@ -1750,4 +1672,8 @@ export default function Home() {
             </a>
           </section>
         </div>
+      ) : null}
     </main>
+
+  );
+}

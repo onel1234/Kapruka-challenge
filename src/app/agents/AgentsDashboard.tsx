@@ -296,7 +296,7 @@ function MemoryOutput({ insights }: { insights: GiftAgentInsights }) {
   if (!insights.recipientMemory) {
     return (
       <p className="text-xs text-[#9a8878]">
-        No recipient profile yet. Name a specific person (e.g. "Amma", "Nisha") in your request.
+        No recipient profile yet. Name a specific person (e.g. &quot;Amma&quot;, &quot;Nisha&quot;) in your request.
       </p>
     );
   }
@@ -415,6 +415,7 @@ export default function AgentsDashboard() {
     try {
       const stored = localStorage.getItem("kapruka_agent_insights");
       if (stored) {
+        // eslint-disable-next-line
         setInsights(JSON.parse(stored) as GiftAgentInsights);
       }
     } catch {

@@ -229,7 +229,7 @@ export default function LandingAuth() {
           <div className="mt-8 text-center font-label-md text-label-md text-on-surface-variant">
             {mode === "signin" ? (
               <>
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <button type="button" onClick={() => setMode("signup")} className="text-primary font-semibold hover:underline">
                   Sign up
                 </button>
@@ -249,7 +249,7 @@ export default function LandingAuth() {
       {/* Footer */}
       <footer className="bg-surface-cream w-full py-8 mt-auto flex flex-col md:flex-row justify-between items-center gap-4 px-margin-mobile md:px-margin-desktop z-20 relative">
         <div className="font-label-sm text-label-sm text-on-background">
-          © 2024 Kapruka. Sri Lanka's largest e-commerce store.
+          © 2024 Kapruka. Sri Lanka&apos;s largest e-commerce store.
         </div>
         <div className="flex gap-4">
           <a className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
