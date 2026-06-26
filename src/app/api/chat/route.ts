@@ -23,11 +23,18 @@ type ShoppingPlan = {
   situation?: string | null;
   emotional_tone?: "apology" | "romantic" | "celebration" | "sympathy" | "gratitude" | "practical" | null;
   suggested_addons?: string[];
+  // Checkout fields extracted from conversation
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
+  sender_name?: string | null;
+  delivery_address?: string | null;
+  gift_message?: string | null;
+  delivery_instructions?: string | null;
 };
 
 const DEFAULT_RESPONSE_PREFERENCES: ResponsePreferences = {
-  tone: "warm",
-  emojiMode: "none",
+  tone: "playful",
+  emojiMode: "expressive",
   detailLevel: "balanced",
 };
 
@@ -204,10 +211,8 @@ function fallbackPlan(message: string): ShoppingPlan {
               ? "Negombo"
               : null;
 
-  if (searchQueries.size === 0) {
-    searchQueries.add("birthday");
-    searchQueries.add("chocolate");
-  }
+  // Don't default to random products when we can't parse intent —
+  // the reply builder will ask the user to clarify instead.
 
   return {
     search_queries: Array.from(searchQueries).slice(0, 3),
@@ -433,15 +438,15 @@ function languageInstruction(language: ShoppingPlan["language"]) {
 
 function responseStyleInstruction(preferences: ResponsePreferences) {
   const tone = {
-    warm: "warm, helpful, Sri Lankan concierge tone",
+    warm: "warm, caring, and supportive — like a close friend who's excited to help you find the perfect gift. Use a conversational, personal style. Show genuine enthusiasm and empathy",
     professional: "professional, polished, and direct",
-    playful: "playful, cheerful, and light",
+    playful: "playful, cheerful, and light — like chatting with your best friend who knows all the best gift ideas. Be bubbly, use casual language, and show you genuinely care",
     concise: "concise, practical, and low-fluff",
   }[preferences.tone];
   const emoji = {
     none: "Do not use emojis.",
     light: "Use at most one relevant emoji if it feels natural.",
-    expressive: "Use a few relevant emojis, but keep the message readable.",
+    expressive: "Use emojis generously throughout your response! 🎁🌸💝 Sprinkle them naturally to add warmth and personality. Every greeting, recommendation, and sign-off should have emojis.",
   }[preferences.emojiMode];
   const length = {
     short: "Keep it under 70 words.",
@@ -675,32 +680,35 @@ function hasShoppingIntent(message: string) {
 }
 
 function buildOutOfScopeReply(language: AppLanguage | null, preferences: ResponsePreferences) {
-  const emoji = preferences.emojiMode === "none" ? "" : " 🎁";
+  const useEmojis = preferences.emojiMode !== "none";
 
   if ((language as AppLanguage | null) === "sinhala") {
-    return `මම Kapruka තෑගි සෙවීම, delivery check කිරීම, checkout link සෑදීම, සහ paid order tracking සඳහායි. තෑග්ග කාටද, අවස්ථාව, budget එක, delivery city එක කියන්න; මම හොඳ විකල්ප සොයලා දෙන්නම්.${emoji}`;
+    return useEmojis
+      ? "අයියෝ, ඒක ගැන මට උදව් කරන්න බෑ 😅 ඒත් තෑගි හොයන්න නම් මම expert! 🎁💝 ඔයාට කාටහරි ලස්සන gift එකක් හොයන්න ඕනේ නම් කියන්නකෝ, මම උදව් කරන්නම්! 😊✨"
+      : "අයියෝ, ඒක ගැන මට උදව් කරන්න බෑ. ඒත් තෑගි හොයන්න නම් මම expert! ඔයාට කාටහරි ලස්සන gift එකක් හොයන්න ඕනේ නම් කියන්නකෝ, මම උදව් කරන්නම්!";
   }
 
   if (language === "singlish") {
-    return `Mama Kavi, Kapruka gift concierge. Gift ideas, product search, delivery check, checkout link hadana eka, paid order tracking walata help karanna puluwan. Gift eka kaatada, occasion eka, budget eka, delivery city eka kiyanna; mama hondama options hoyala dennam.${emoji}`;
+    return useEmojis
+      ? "Aiyo sorry, eka gena mata help karanna be 😅 But gift hoyanna nam mama expert! 🎁💝 Oyata kawruhari special kenekuta lassana gift ekak hoyanna one nam kiyannako, mama help karannam! 😊✨"
+      : "Aiyo sorry, eka gena mata help karanna be. But gift hoyanna nam mama expert! Oyata kawruhari special kenekuta lassana gift ekak hoyanna one nam kiyannako, mama help karannam!";
   }
 
   if ((language as AppLanguage | null) === "tamil") {
-    return `நான் Kapruka பரிசு தேடல், delivery check, checkout link உருவாக்குதல், paid order tracking ஆகியவற்றுக்காக இருக்கிறேன். பரிசு யாருக்காக, நிகழ்வு, budget, delivery city சொல்லுங்கள்; பொருத்தமான விருப்பங்களைத் தேடித் தருகிறேன்.${emoji}`;
+    return useEmojis
+      ? "அய்யோ மன்னிக்கணும், அதுக்கு என்னால உதவி பண்ண முடியாது 😅 ஆனா பரிசு தேட நான் expert! 🎁💝 யாருக்காவது அழகான gift வேணும்னா சொல்லுங்க, உதவி பண்றேன்! 😊✨"
+      : "அய்யோ மன்னிக்கணும், அதுக்கு என்னால உதவி பண்ண முடியாது. ஆனா பரிசு தேட நான் expert! யாருக்காவது அழகான gift வேணும்னா சொல்லுங்க, உதவி பண்றேன்!";
   }
 
   if (language === "tanglish") {
-    return `Naan Kavi, unga Kapruka gift concierge. Gift ideas, product search, delivery check, checkout link, paid order tracking ellathukkum help panren. Gift yaarukku, occasion, budget, delivery city sollunga; suitable options thedi tharen.${emoji}`;
-  }
-  if ((language as ShoppingPlan["language"]) === "sinhala") {
-    return "මම Kapruka තෑගි සෙවීම, delivery check කිරීම, checkout link සෑදීම, සහ paid order tracking සඳහායි. තෑග්ග කාටද, අවස්ථාව, budget එක, delivery city එක කියන්න; මම හොඳ විකල්ප සොයලා දෙන්නම්.";
-  }
-
-  if ((language as ShoppingPlan["language"]) === "tamil") {
-    return "நான் Kapruka பரிசு தேடல், delivery check, checkout link உருவாக்குதல், paid order tracking ஆகியவற்றுக்காக இருக்கிறேன். பரிசு யாருக்காக, நிகழ்வு, budget, delivery city சொல்லுங்கள்; பொருத்தமான விருப்பங்களைத் தேடித் தருகிறேன்.";
+    return useEmojis
+      ? "Aiyo sorry, adhukku ennala help panna mudiyaadhu 😅 Aana gift theda naan expert! 🎁💝 Yaarukkaavathu azhagaana gift venum-na sollunga, naan help panren! 😊✨"
+      : "Aiyo sorry, adhukku ennala help panna mudiyaadhu. Aana gift theda naan expert! Yaarukkaavathu azhagaana gift venum-na sollunga, naan help panren!";
   }
 
-  return `I am Kavi, your Kapruka gift concierge. I can help with gift ideas, product search, delivery checks, checkout links, and paid order tracking. Tell me who the gift is for, the occasion, budget, and delivery city.${emoji}`;
+  return useEmojis
+    ? "Oops, sorry about that! 😅 I'm not the best at that kind of question, but I'm amazing at finding gifts! 🎁💝 If you need help picking something special for someone, just tell me and I'll be right on it! 😊✨"
+    : "Oops, sorry about that! I'm not the best at that kind of question, but I'm amazing at finding gifts! If you need help picking something special for someone, just tell me and I'll be right on it!";
 }
 
 async function resolveConversation(params: {
@@ -760,6 +768,12 @@ async function createShoppingPlan(message: string, history: ChatMessage[], reply
               situation: "string or null",
               emotional_tone: "apology | romantic | celebration | sympathy | gratitude | practical | null",
               suggested_addons: ["small helpful add-ons such as note card or chocolates"],
+              recipient_name: "full name of the gift recipient if mentioned, or null",
+              recipient_phone: "phone number of the recipient if mentioned, or null",
+              sender_name: "name of the person sending the gift if mentioned, or null",
+              delivery_address: "street address for delivery if mentioned, or null",
+              gift_message: "gift card message if the user specified one, or null",
+              delivery_instructions: "special delivery instructions if mentioned, or null",
             },
             selected_reply_language: forcedLanguage,
           }),
@@ -926,6 +940,10 @@ function buildGroundedReply(params: {
   const emoji = preferences.emojiMode === "none" ? "" : " 🎁";
 
   if (!products.length) {
+    if (queries.length === 0) {
+      return "Please acknowledge the user's message conversationally and continue helping them with their checkout or gift selection.";
+    }
+
     const searchedFor = queries.join(", ");
 
     if ((language as ShoppingPlan["language"]) === "sinhala") {
@@ -997,6 +1015,47 @@ function buildGroundedReply(params: {
   }
 
   return `I found some real Kapruka options that fit the request${emoji}\n\n${productLines}${deliveryText}${addonText}${agentBlock}\n\nMy first pick is ${picks[0].name}. Add one or two to the cart and I will help you turn it into a complete gift.`;
+}
+
+function buildCheckoutCollectionPrompt(params: {
+  plan: ShoppingPlan;
+  cartSnapshot?: unknown;
+  preferences: ResponsePreferences;
+}): string | null {
+  const { plan, preferences } = params;
+  const cart = Array.isArray(params.cartSnapshot) ? params.cartSnapshot : [];
+  const useEmojis = preferences.emojiMode !== "none";
+
+  // Only prompt for checkout details if there are items to buy
+  if (cart.length === 0) return null;
+
+  const missing: string[] = [];
+  if (!plan.recipient_name) missing.push("recipient's full name");
+  if (!plan.recipient_phone) missing.push("recipient's phone number");
+  if (!plan.sender_name) missing.push("your name (the sender)");
+  if (!plan.delivery_address && !plan.city) missing.push("delivery address and city");
+  else if (!plan.delivery_address) missing.push("delivery street address");
+  else if (!plan.city) missing.push("delivery city");
+  if (!plan.delivery_date) missing.push("preferred delivery date");
+  if (!plan.gift_message) missing.push("a gift message for the card");
+  if (!plan.delivery_instructions) missing.push("any special delivery instructions (or just say none)");
+
+  if (missing.length === 0) return null;
+
+  // Ask for at most 3-4 things at a time to feel conversational
+  const batch = missing.slice(0, 4);
+  const list = batch.length === 1
+    ? batch[0]
+    : batch.slice(0, -1).join(", ") + " and " + batch[batch.length - 1];
+
+  if (useEmojis) {
+    if (batch.length <= 2) {
+      return `\n\nTo get this gift on its way, could you share ${list}? 📝💛`;
+    }
+    return `\n\nLet's get this gift ready to send! 🚀💝 Could you tell me ${list}?`;
+  }
+
+  return `\n\nTo get this gift on its way, could you share ${list}?`;
 }
 
 export async function POST(request: Request) {
@@ -1128,7 +1187,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!hasShoppingIntent(message)) {
+    if (!hasShoppingIntent(message) && history.length === 0) {
       const reply = buildOutOfScopeReply(replyLanguage, responsePreferences);
 
       await prisma.$transaction([
@@ -1216,26 +1275,28 @@ export async function POST(request: Request) {
       preferences: responsePreferences,
       agentInsights,
     });
-    const reply = products.length
-      ? await callOpenRouter(
-          [
-            {
-              role: "system",
-              content: `Rewrite the grounded response as a human Kapruka concierge, not a search-results bot. ${languageInstruction(plan.language ?? replyLanguage ?? "english")} ${responseStyleInstruction(responsePreferences)} ${conciergeMove(plan)} Start by acknowledging the user's situation in one natural sentence. Then give 3-4 grounded product options and one clear recommendation. Suggest a thoughtful next step, such as adding a note card, chocolates, or checking delivery, only if supported by the grounded response. Keep every product name and price exactly as provided. Do not add any product, price, checkout link, table, markdown link, or claim that is not in the grounded response.`,
-            },
-            {
-              role: "user",
-              content: JSON.stringify({
-                grounded_response: groundedReply,
-                allowed_products: productBrief(products),
-                agent_insights: agentInsights,
-              }),
-            },
-          ],
-          450,
-        ).catch(() => groundedReply)
-          .then((candidate) => (candidate.includes(products[0].name) ? candidate : groundedReply))
-      : groundedReply;
+    const reply = await callOpenRouter(
+      [
+        {
+          role: "system",
+          content: `Rewrite the grounded response as a warm, friendly companion helping a dear friend pick the perfect gift — NOT as a corporate bot or a search-results machine. Talk like you're texting a friend you care about. Be genuinely excited about the gift ideas. ${languageInstruction(plan.language ?? replyLanguage ?? "english")} ${responseStyleInstruction(responsePreferences)} ${conciergeMove(plan)} Start by acknowledging the user's situation in one natural sentence. Then give 3-4 grounded product options and one clear recommendation. Suggest a thoughtful next step, such as adding a note card, chocolates, or checking delivery, only if supported by the grounded response. Keep every product name and price exactly as provided. Do not add any product, price, checkout link, table, markdown link, or claim that is not in the grounded response.`,
+        },
+        ...history.slice(-4).map((msg) => ({
+          role: (msg.role === "user" ? "user" : "assistant") as "user" | "assistant",
+          content: msg.content,
+        })),
+        {
+          role: "user",
+          content: JSON.stringify({
+            grounded_response: groundedReply,
+            allowed_products: productBrief(products),
+            agent_insights: agentInsights,
+          }),
+        },
+      ],
+      450,
+    ).catch(() => groundedReply)
+     .then((candidate) => (products.length > 0 && !candidate.includes(products[0].name) ? groundedReply : candidate));
 
     const deliveryPayload = delivery ? { city: plan.city, delivery_date: plan.delivery_date ?? null, raw: delivery } : null;
 
@@ -1265,13 +1326,38 @@ export async function POST(request: Request) {
       }),
     ]);
 
+    const checkoutPrompt = buildCheckoutCollectionPrompt({
+      plan,
+      cartSnapshot: body.cartSnapshot,
+      preferences: responsePreferences,
+    });
+    const finalReply = checkoutPrompt ? reply + checkoutPrompt : reply;
+
+    // Re-save the assistant message with the checkout prompt appended
+    if (checkoutPrompt) {
+      await prisma.message.updateMany({
+        where: { conversationId: conversation.id, role: "assistant", content: reply },
+        data: { content: finalReply },
+      });
+    }
+
     return NextResponse.json({
-      reply,
+      reply: finalReply,
       products,
       delivery: deliveryPayload,
       plan,
       agentInsights,
       conversationId: conversation.id,
+      extractedCheckout: {
+        recipientName: plan.recipient_name ?? null,
+        recipientPhone: plan.recipient_phone ?? null,
+        senderName: plan.sender_name ?? null,
+        address: plan.delivery_address ?? null,
+        city: plan.city ?? null,
+        date: plan.delivery_date ?? null,
+        giftMessage: plan.gift_message ?? null,
+        instructions: plan.delivery_instructions ?? null,
+      },
     });
   } catch (error) {
     return NextResponse.json(

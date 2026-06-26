@@ -107,15 +107,15 @@ const DETAIL_OPTIONS: Array<{ value: ResponsePreferences["detailLevel"]; label: 
 
 const WELCOME_BY_LANGUAGE: Record<AppLanguage, string> = {
   english:
-    "Ayubowan. I am Kavi, your Kapruka gift concierge. Tell me who the gift is for, the occasion, budget, and delivery city. I will curate options and help you check out.",
+    "Ayubowan! 🙏✨ Hey there, I'm Kavi — your personal gift-finding buddy! 🎁💛 Tell me who you're shopping for and what the occasion is, and I'll help you find something truly amazing! What's the vibe? 😊",
   sinhala:
-    "α╢åα╢║α╖öα╢╢α╖¥α╖Çα╢▒α╖è. α╢╕α╢╕ α╢Üα╖Çα╖Æ, α╢öα╢╢α╖Ü Kapruka α╢¡α╖æα╢£α╖Æ α╖âα╖äα╖Åα╢║α╢Üα╢║α╖Å. α╢¡α╖æα╢£α╖èα╢£ α╢Üα╖Åα╢ºα╢», α╢àα╖Çα╖âα╖èα╢«α╖Åα╖Ç, α╢àα╢║α╖Çα╖Éα╢║ α╖âα╖ä α╢╢α╖Öα╢»α╖Åα╖äα╖Éα╢╗α╖ôα╢╕α╖Ü α╢▒α╢£α╢╗α╢║ α╢Üα╖Æα╢║α╢▒α╖èα╢▒. α╢╕α╢╕ α╖âα╖öα╢»α╖öα╖âα╖ö α╖Çα╖Æα╢Üα╢╜α╖èα╢┤ α╢¡α╖¥α╢╗α╖Å α╢»α╖Öα╢▒α╖èα╢▒α╢╕α╖è.",
+    "ආයුබෝවන්! 🙏✨ මම කවි — ඔයාගේ gift-finding buddy! 🎁💛 තෑග්ග කාටද, මොන අවස්ථාවටද කියන්නකෝ, මම ඔයාට සුපිරිම gift එකක් හොයලා දෙන්නම්! 😊",
   singlish:
-    "Ayubowan. Mama Kavi, oyage Kapruka gift concierge. Gift eka kaatada, occasion eka, budget eka, delivery city eka kiyanna; mama hondama options hoyala checkout wenakan help karannam.",
+    "Ayubowan! 🙏✨ Mama Kavi — oyage personal gift-finding buddy! 🎁💛 Gift eka kaatada, occasion eka mokakda kiyannako, mama oyata best eka hoyala dennam! 😊",
   tamil:
-    "α«╡α«úα«òα»ìα«òα««α»ì. α«¿α«╛α«⌐α»ì α«òα«╡α«┐, α«ëα«Öα»ìα«òα«│α»ì Kapruka α«¬α«░α«┐α«Üα»ü α«ëα«ñα«╡α«┐α«»α«╛α«│α«░α»ì. α«¬α«░α«┐α«Üα»ü α«»α«╛α«░α»üα«òα»ìα«òα«╛α«ò, α«¿α«┐α«òα«┤α»ìα«╡α»ü, α«Üα»åα«▓α«╡α»ü α«╡α«░α««α»ìα«¬α»ü, α«╡α«┐α«¿α«┐α«»α»ïα«ò α«¿α«òα«░α««α»ì α«åα«òα«┐α«»α«╡α«▒α»ìα«▒α»ê α«Üα»èα«▓α»ìα«▓α»üα«Öα»ìα«òα«│α»ì. α«¬α»èα«░α»üα«ñα»ìα«ñα««α«╛α«⌐ α«ñα»çα«░α»ìα«╡α»üα«òα«│α»ê α«¿α«╛α«⌐α»ì α«¬α«░α«┐α«¿α»ìα«ñα»üα«░α»êα«òα»ìα«òα«┐α«▒α»çα«⌐α»ì.",
+    "வணக்கம்! 🙏✨ நான் கவி — உங்கள் personal gift-finding buddy! 🎁💛 பரிசு யாருக்கு, என்ன occasion-ன்னு சொல்லுங்க, நான் அருமையான gift தேடித் தருகிறேன்! 😊",
   tanglish:
-    "Vanakkam. Naan Kavi, unga Kapruka gift concierge. Gift yaarukku, occasion, budget, delivery city sollunga; suitable options thedi checkout varaikum help panren.",
+    "Vanakkam! 🙏✨ Naan Kavi — unga personal gift-finding buddy! 🎁💛 Gift yaarukku, enna occasion-nu sollunga, naan best option thedi tharen! 😊",
 };
 
 function formatPrice(product: Product) {
@@ -308,8 +308,8 @@ export default function Home() {
   const [trackingError, setTrackingError] = useState<string | null>(null);
   const [isTrackingOrder, setIsTrackingOrder] = useState(false);
   const [responsePreferences, setResponsePreferences] = useState<ResponsePreferences>({
-    tone: "warm",
-    emojiMode: "none",
+    tone: "playful",
+    emojiMode: "expressive",
     detailLevel: "balanced",
   });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -501,11 +501,25 @@ export default function Home() {
         setSelectedLanguage(data.plan.language);
       }
 
-      if (data.plan?.city) {
-        setCheckout((current) => ({ ...current, city: data.plan.city }));
-      }
-      if (data.plan?.delivery_date) {
-        setCheckout((current) => ({ ...current, date: data.plan.delivery_date }));
+      if (data.extractedCheckout) {
+        setCheckout((current) => ({
+          ...current,
+          ...(data.extractedCheckout.recipientName && { recipientName: data.extractedCheckout.recipientName }),
+          ...(data.extractedCheckout.recipientPhone && { recipientPhone: data.extractedCheckout.recipientPhone }),
+          ...(data.extractedCheckout.senderName && { senderName: data.extractedCheckout.senderName }),
+          ...(data.extractedCheckout.address && { address: data.extractedCheckout.address }),
+          ...(data.extractedCheckout.city && { city: data.extractedCheckout.city }),
+          ...(data.extractedCheckout.date && { date: data.extractedCheckout.date }),
+          ...(data.extractedCheckout.giftMessage && { giftMessage: data.extractedCheckout.giftMessage }),
+          ...(data.extractedCheckout.instructions && { instructions: data.extractedCheckout.instructions }),
+        }));
+      } else {
+        if (data.plan?.city) {
+          setCheckout((current) => ({ ...current, city: data.plan.city }));
+        }
+        if (data.plan?.delivery_date) {
+          setCheckout((current) => ({ ...current, date: data.plan.delivery_date }));
+        }
       }
     } catch (error) {
       setMessages([
@@ -516,7 +530,7 @@ export default function Home() {
           content:
             error instanceof Error
               ? error.message
-              : "I hit a snag while talking to the shopping tools. Please try again.",
+              : "Oh no, something went a little sideways on my end! 😅 Could you try that again? I promise I'll get it right this time! 💪✨",
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -676,86 +690,53 @@ export default function Home() {
       {/* Sidebar */}
       <aside className={`flex flex-col border-r border-[#ded2bd] bg-[#fffaf0] transition-all duration-300 shrink-0 ${isSidebarOpen ? "w-[340px]" : "w-0 overflow-hidden border-none"}`}>
         <div className="flex-1 overflow-y-auto flex flex-col w-[340px]">
-<header className="flex items-center justify-between p-4 border-b border-[#eadfc9] shrink-0">
+          <header className="flex items-center justify-between p-6 border-b border-[#eadfc9] shrink-0 bg-[#fffdfa]">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#cc2f2f] text-white shadow-sm">
-                <Gift size={22} />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#cc2f2f] text-white shadow-sm">
+                <Gift size={24} />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#85653a]">Kapruka Challenge Demo</p>
-                <h1 className="text-xl font-semibold sm:text-2xl">Kavi Gift Concierge</h1>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#85653a] mb-0.5">Kapruka Challenge</p>
+                <h1 className="text-base font-bold text-[#2c261f] leading-tight">Gift Concierge</h1>
               </div>
             </div>
-            <div className="hidden items-center gap-3 md:flex">
-              <a
-                href="/agents"
-                className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm font-semibold text-[#5d5144] transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
-              >
-                <Blocks size={15} />
-                Agent Builder
-              </a>
-              <div className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144]">
-                <Sparkles size={16} className="text-[#cc2f2f]" />
-                Multilingual, checkout-ready
-              </div>
-            </div>
-            <label className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144]">
-              <span className="hidden font-medium sm:inline">Language</span>
-              <select
-                value={selectedLanguage}
-                onChange={(event) => changeLanguage(event.target.value as AppLanguage)}
-                className="bg-transparent font-semibold outline-none"
-                aria-label="Assistant language"
-              >
-                {LANGUAGE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {session?.user ? (
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="hidden h-10 items-center justify-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 text-sm font-semibold text-[#5d5144] transition hover:border-[#cc2f2f] hover:text-[#cc2f2f] sm:flex"
-              >
-                <LogOut size={15} />
-                Sign out
-              </button>
-            ) : null}
           </header>
           <div className="flex-1 overflow-y-auto flex flex-col">
 <nav className="bg-transparent border-b border-[#eadfc9] p-4">
               <button
                 type="button"
                 onClick={() => void startNewConversation()}
-                className="mb-4 flex h-11 w-full items-center justify-center rounded-lg bg-[#1f4f4a] text-sm font-semibold text-white transition hover:bg-[#173d39]"
+                className="mb-8 flex h-12 w-full items-center justify-center rounded-xl bg-[#1f4f4a] text-sm font-bold text-white shadow-sm transition hover:bg-[#173d39] hover:shadow-md"
               >
+                <Plus size={18} className="mr-2" />
                 New chat
               </button>
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#85653a]">History</p>
-                {isLoadingConversations ? <Loader2 size={14} className="animate-spin text-[#85653a]" /> : null}
+              <div className="mb-4 flex items-center justify-between px-1">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a68f70]">History</p>
+                {isLoadingConversations ? <Loader2 size={14} className="animate-spin text-[#a68f70]" /> : null}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 flex-1 overflow-y-auto pr-1 -mr-1">
                 {conversations.map((conversation) => (
                   <button
                     key={conversation.id}
                     type="button"
                     onClick={() => void loadConversation(conversation.id)}
-                    className={`w-full rounded-lg border p-3 text-left transition ${
+                    className={`group w-full rounded-xl p-4 text-left transition-all duration-200 ${
                       conversation.id === conversationId
-                        ? "border-[#1f4f4a] bg-white"
-                        : "border-[#e2d1b7] bg-white/60 hover:bg-white"
+                        ? "bg-white shadow-sm ring-1 ring-[#eadfc9] text-[#2c261f]"
+                        : "bg-transparent text-[#6c5d4a] hover:bg-[#f3ebd8] hover:text-[#2c261f]"
                     }`}
                   >
-                    <p className="line-clamp-2 text-sm font-semibold">{conversation.title}</p>
-                    <p className="mt-1 text-xs text-[#756650]">{conversation.messageCount} messages</p>
+                    <p className="line-clamp-2 text-sm font-bold leading-5">{conversation.title}</p>
+                    <p className={`mt-1.5 text-[11px] font-medium transition-colors ${
+                      conversation.id === conversationId ? "text-[#85653a]" : "text-[#a68f70] group-hover:text-[#85653a]"
+                    }`}>
+                      {conversation.messageCount} messages
+                    </p>
                   </button>
                 ))}
                 {!conversations.length && !isLoadingConversations ? (
-                  <p className="rounded-lg border border-dashed border-[#d7c5aa] p-3 text-sm leading-5 text-[#756650]">
+                  <p className="rounded-xl border border-dashed border-[#d7c5aa] p-4 text-sm leading-5 text-[#85653a] text-center bg-[#fdfaf5]">
                     Your saved chats will appear here.
                   </p>
                 ) : null}
@@ -1104,12 +1085,50 @@ export default function Home() {
       <section className="flex flex-1 flex-col relative transition-all duration-300">
         <header className="absolute top-0 left-0 right-0 p-4 z-10 flex items-center justify-between pointer-events-none">
           <div className="pointer-events-auto">
-            <button type="button" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a]">
+            <button type="button" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
               <Menu size={20} />
             </button>
           </div>
-          <div className="pointer-events-auto flex items-center gap-2">
-            <button type="button" onClick={() => setIsDrawerOpen(!isDrawerOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a]">
+          <div className="pointer-events-auto flex items-center gap-3">
+            <div className="hidden items-center gap-3 lg:flex">
+              <a
+                href="/agents"
+                className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm font-semibold text-[#5d5144] shadow-sm transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
+              >
+                <Blocks size={15} />
+                Agent Builder
+              </a>
+              <div className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-[#fffcf8] px-3 py-2 text-sm font-medium text-[#5d5144] shadow-sm">
+                <Sparkles size={16} className="text-[#cc2f2f]" />
+                Multilingual, checkout-ready
+              </div>
+            </div>
+            <label className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144] shadow-sm cursor-pointer hover:border-[#1f4f4a] transition-colors">
+              <span className="hidden font-medium sm:inline">Language</span>
+              <select
+                value={selectedLanguage}
+                onChange={(event) => changeLanguage(event.target.value as AppLanguage)}
+                className="bg-transparent font-semibold outline-none cursor-pointer"
+                aria-label="Assistant language"
+              >
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {session?.user ? (
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="hidden h-10 items-center justify-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 text-sm font-semibold text-[#5d5144] shadow-sm transition hover:border-[#cc2f2f] hover:text-[#cc2f2f] sm:flex"
+              >
+                <LogOut size={15} />
+                <span className="hidden md:inline">Sign out</span>
+              </button>
+            ) : null}
+            <button type="button" onClick={() => setIsDrawerOpen(!isDrawerOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
               {isDrawerOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
             </button>
           </div>
