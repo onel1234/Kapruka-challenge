@@ -440,7 +440,7 @@ export default function AgentsDashboard() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Link
-                href="/"
+                href="/chat"
                 className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm font-medium text-[#5d5144] transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
               >
                 <ArrowLeft size={15} />
@@ -563,7 +563,7 @@ export default function AgentsDashboard() {
             Start a gift conversation in Kavi. Each time you ask for a recommendation, all 4 agents fire and their outputs appear live here and in the chat sidebar.
           </p>
           <Link
-            href="/"
+            href="/chat"
             className="flex items-center gap-2 rounded-lg bg-[#cc2f2f] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a92727]"
           >
             Open Kavi chat

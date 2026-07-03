@@ -114,9 +114,9 @@ export default function LandingAuth() {
       </div>
 
       {/* Right side: Auth Form */}
-      <div className="flex flex-1 w-full flex-col justify-center px-6 sm:px-12 lg:w-1/2 lg:px-24 xl:px-32 relative py-8 lg:py-12 bg-white rounded-t-[2.5rem] -mt-8 lg:mt-0 lg:rounded-none z-20 shadow-[0_-12px_30px_rgba(0,0,0,0.1)] lg:shadow-none">
+      <div className="flex flex-1 w-full flex-col px-6 sm:px-12 lg:w-1/2 lg:px-24 xl:px-32 relative py-8 lg:py-12 bg-white rounded-t-[2.5rem] -mt-8 lg:mt-0 lg:rounded-none z-20 shadow-[0_-12px_30px_rgba(0,0,0,0.1)] lg:shadow-none">
         {/* Top Navigation inside Auth Pane */}
-        <div className="absolute top-6 lg:top-8 left-6 sm:left-12 lg:left-8 right-6 sm:right-12 lg:right-8 flex justify-between items-center">
+        <div className="w-full flex justify-between items-center mb-8 shrink-0">
           <a className="font-bold text-primary hover:opacity-80 transition-opacity block w-28" href="#">
             <img alt="Kapruka Logo" className="w-full h-auto object-contain" src="/images.png" />
           </a>
@@ -126,7 +126,7 @@ export default function LandingAuth() {
           </button>
         </div>
 
-        <div className="w-full max-w-md mx-auto fade-in-up mt-16 lg:mt-0">
+        <div className="w-full max-w-md mx-auto fade-in-up flex-1 flex flex-col justify-center">
           <div className="mb-8 lg:mb-10 text-center lg:text-left">
             <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-slate-900 mb-2 lg:mb-3">
               {mode === "signin" ? "Welcome back" : "Create an account"}
@@ -250,7 +250,7 @@ export default function LandingAuth() {
         </div>
         
         {/* Footer inside Auth Pane */}
-        <div className="absolute bottom-4 lg:bottom-6 left-6 sm:left-12 lg:left-8 right-6 sm:right-12 lg:right-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 mt-8 gap-3 lg:gap-4">
+        <div className="w-full flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 mt-8 gap-3 lg:gap-4 shrink-0">
           <div>© 2024 Kapruka. All rights reserved.</div>
           <div className="flex gap-4">
             <a className="hover:text-slate-600 transition-colors" href="https://github.com/onel1234" target="_blank" rel="noopener noreferrer">Github</a>

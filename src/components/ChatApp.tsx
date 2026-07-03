@@ -828,7 +828,50 @@ export default function Home() {
                   </p>
                 ) : null}
               </div>
+              </div>
             </nav>
+          </div>
+          <div className="p-4 border-t border-[#eadfc9] bg-[#fffdfa] shrink-0 flex flex-col gap-2">
+            <label className="flex sm:hidden items-center justify-between rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144] shadow-sm cursor-pointer hover:border-[#1f4f4a] transition-colors">
+              <span className="font-medium">Language</span>
+              <select
+                value={selectedLanguage}
+                onChange={(event) => changeLanguage(event.target.value as AppLanguage)}
+                className="bg-transparent font-semibold outline-none cursor-pointer text-right max-w-[120px]"
+                aria-label="Assistant language"
+              >
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => { setIsTrackOrderModalOpen(true); setIsSidebarOpen(false); }}
+              className="flex sm:hidden items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm font-semibold text-[#5d5144] shadow-sm transition hover:border-[#1f4f4a] hover:text-[#1f4f4a] w-full text-left"
+            >
+              <PackageCheck size={16} />
+              Track Order
+            </button>
+            <a
+              href="/agents"
+              className="flex lg:hidden items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm font-semibold text-[#5d5144] shadow-sm transition hover:border-[#1f4f4a] hover:text-[#1f4f4a] w-full"
+            >
+              <Blocks size={16} />
+              Agent Builder
+            </a>
+            {session?.user ? (
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="flex sm:hidden items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm font-semibold text-[#5d5144] shadow-sm transition hover:border-[#cc2f2f] hover:text-[#cc2f2f] w-full text-left"
+              >
+                <LogOut size={16} />
+                Sign out
+              </button>
+            ) : null}
           </div>
         </div>
       </aside>
