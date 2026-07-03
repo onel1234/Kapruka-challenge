@@ -769,9 +769,14 @@ export default function Home() {
   return (
     
     <main className="flex h-screen overflow-hidden bg-[#f7f2e8] text-[#1d1a16]">
+      {/* Sidebar Overlay (Mobile) */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
+      
       {/* Sidebar */}
-      <aside className={`flex flex-col border-r border-[#ded2bd] bg-[#fffaf0] transition-all duration-300 shrink-0 ${isSidebarOpen ? "w-[340px]" : "w-0 overflow-hidden border-none"}`}>
-        <div className="flex-1 overflow-y-auto flex flex-col w-[340px]">
+      <aside className={`fixed inset-y-0 left-0 z-50 lg:static flex flex-col border-r border-[#ded2bd] bg-[#fffaf0] transition-all duration-300 shrink-0 ${isSidebarOpen ? "w-[85vw] sm:w-[340px]" : "w-0 overflow-hidden border-none"}`}>
+        <div className="flex-1 overflow-y-auto flex flex-col w-[85vw] sm:w-[340px]">
           <header className="flex items-center justify-between p-6 border-b border-[#eadfc9] shrink-0 bg-[#fffdfa]">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#cc2f2f] text-white shadow-sm">
@@ -830,13 +835,13 @@ export default function Home() {
 
       {/* Main Chat Area */}
       <section className="flex flex-1 flex-col relative transition-all duration-300">
-        <header className="absolute top-0 left-0 right-0 p-4 z-10 flex items-center justify-between pointer-events-none">
+        <header className="absolute top-0 left-0 right-0 p-4 z-30 flex items-center justify-between pointer-events-none">
           <div className="pointer-events-auto">
             <button type="button" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
               <Menu size={20} />
             </button>
           </div>
-          <div className="pointer-events-auto flex items-center gap-3">
+          <div className="pointer-events-auto flex items-center gap-2 sm:gap-3">
             <div className="hidden items-center gap-3 lg:flex">
               <a
                 href="/agents"
@@ -850,7 +855,7 @@ export default function Home() {
                 Multilingual, checkout-ready
               </div>
             </div>
-            <label className="flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144] shadow-sm cursor-pointer hover:border-[#1f4f4a] transition-colors">
+            <label className="hidden sm:flex items-center gap-2 rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#5d5144] shadow-sm cursor-pointer hover:border-[#1f4f4a] transition-colors">
               <span className="hidden font-medium sm:inline">Language</span>
               <select
                 value={selectedLanguage}
@@ -878,10 +883,15 @@ export default function Home() {
             <button type="button" onClick={() => setIsAssistantModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Assistant Style">
               <SlidersHorizontal size={20} />
             </button>
-            <button type="button" onClick={() => setIsCheckoutModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Live Cart & Checkout">
+            <button type="button" onClick={() => setIsCheckoutModalOpen(true)} className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Live Cart & Checkout">
               <ShoppingBag size={20} />
+              {cart.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#cc2f2f] text-[10px] font-bold text-white">
+                  {cart.length}
+                </span>
+              )}
             </button>
-            <button type="button" onClick={() => setIsTrackOrderModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Track Order">
+            <button type="button" onClick={() => setIsTrackOrderModalOpen(true)} className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Track Order">
               <PackageCheck size={20} />
             </button>
             <button type="button" onClick={() => setIsDrawerOpen(!isDrawerOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
@@ -892,12 +902,12 @@ export default function Home() {
 
         <div className="flex-1 overflow-y-auto pt-20 pb-40">
           <div className="mx-auto max-w-4xl px-4 flex flex-col gap-6">
-            <div className="flex flex-col items-center justify-center mt-8 mb-12">
-               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#cc2f2f] text-white shadow-md mb-4">
-                 <Gift size={28} />
+            <div className="flex flex-col items-center justify-center mt-4 sm:mt-8 mb-8 sm:mb-12 text-center">
+               <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[#cc2f2f] text-white shadow-md mb-3 sm:mb-4">
+                 <Gift size={24} className="sm:w-7 sm:h-7" />
                </div>
-               <h1 className="text-3xl font-bold text-[#2c261f]">Ask away!</h1>
-               <p className="mt-2 text-[#6c5d4a]">I&apos;m Kavi, your Kapruka gift concierge.</p>
+               <h1 className="text-2xl sm:text-3xl font-bold text-[#2c261f]">Ask away!</h1>
+               <p className="mt-2 text-sm sm:text-base text-[#6c5d4a]">I&apos;m Kavi, your Kapruka gift concierge.</p>
             </div>
 <div className="space-y-6">
                 {messages.map((message, idx) => {
@@ -966,9 +976,9 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-0 right-0 px-4 pointer-events-none">
+        <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 px-2 sm:px-4 pointer-events-none pb-safe z-20">
           <div className="mx-auto max-w-4xl pointer-events-auto">
-             <div className="bg-white rounded-2xl shadow-xl border border-[#eadfc9] overflow-hidden">
+             <div className="bg-white rounded-xl sm:rounded-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.08)] sm:shadow-xl border border-[#eadfc9] overflow-hidden">
 <div className="p-3">
                 <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
                   {STARTERS.map((starter) => (
@@ -987,15 +997,15 @@ export default function Home() {
                     ref={inputRef}
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
-                    className="h-12 min-w-0 flex-1 rounded-lg border border-[#dcc8a8] bg-white px-4 text-sm outline-none transition focus:border-[#cc2f2f] focus:ring-4 focus:ring-[#cc2f2f]/10"
-                    placeholder="Ask for a gift, occasion, city, date, or budget..."
+                    className="h-10 sm:h-12 min-w-0 flex-1 rounded-lg border border-[#dcc8a8] bg-white px-3 sm:px-4 text-xs sm:text-sm outline-none transition focus:border-[#cc2f2f] focus:ring-4 focus:ring-[#cc2f2f]/10"
+                    placeholder="Ask for a gift, occasion..."
                   />
                   {speechSupported && (
                     <button
                       type="button"
                       onClick={toggleListening}
                       aria-label={isListening ? "Stop listening" : "Start voice input"}
-                      className={`relative flex h-12 w-12 items-center justify-center rounded-lg border transition ${
+                      className={`relative flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg border transition ${
                         isListening
                           ? "border-[#cc2f2f] bg-[#fff0f0] text-[#cc2f2f]"
                           : "border-[#dcc8a8] bg-white text-[#85653a] hover:border-[#cc2f2f] hover:text-[#cc2f2f]"
@@ -1010,7 +1020,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isSending}
-                    className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#cc2f2f] text-white transition hover:bg-[#a92727] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-[#cc2f2f] text-white transition hover:bg-[#a92727] disabled:cursor-not-allowed disabled:opacity-60"
                     aria-label="Send message"
                   >
                     {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
@@ -1022,9 +1032,14 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Right Drawer Overlay (Mobile) */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setIsDrawerOpen(false)} />
+      )}
+
       {/* Right Drawer */}
-      <aside className={`bg-[#fffaf0] border-l border-[#ded2bd] transition-all duration-300 shrink-0 ${isDrawerOpen ? "w-[450px]" : "w-0 overflow-hidden border-none"}`}>
-        <div className="h-full overflow-y-auto w-[450px]">
+      <aside className={`fixed inset-y-0 right-0 z-50 lg:static bg-[#fffaf0] border-l border-[#ded2bd] transition-all duration-300 shrink-0 ${isDrawerOpen ? "w-[90vw] sm:w-[450px]" : "w-0 overflow-hidden border-none"}`}>
+        <div className="h-full overflow-y-auto w-[90vw] sm:w-[450px]">
 <section className=" overflow-y-auto bg-[#f8efe0] px-5 py-5 sm:px-8">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
@@ -1034,11 +1049,16 @@ export default function Home() {
                   </p>
                   <h2 className="text-2xl font-semibold">Gift shelf</h2>
                 </div>
-                {delivery ? (
-                  <div className="rounded-lg border border-[#c7d8cf] bg-[#eef8f2] px-3 py-2 text-xs text-[#24624f]">
-                    <MapPin size={14} className="mb-1 inline" /> Delivery checked
-                  </div>
-                ) : null}
+                <div className="flex items-center gap-2">
+                  {delivery ? (
+                    <div className="hidden sm:block rounded-lg border border-[#c7d8cf] bg-[#eef8f2] px-3 py-2 text-xs text-[#24624f]">
+                      <MapPin size={14} className="mb-1 inline" /> Delivery checked
+                    </div>
+                  ) : null}
+                  <button type="button" onClick={() => setIsDrawerOpen(false)} className="lg:hidden flex h-8 w-8 items-center justify-center rounded-md text-[#85653a] hover:bg-[#eadecc] transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               {products.length ? (

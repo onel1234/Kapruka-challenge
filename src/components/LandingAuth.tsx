@@ -93,9 +93,9 @@ export default function LandingAuth() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white font-sans text-slate-900">
+    <div className="flex min-h-screen bg-slate-50 lg:bg-white font-sans text-slate-900 flex-col lg:flex-row">
       {/* Left side: Hero Image */}
-      <div className="relative hidden w-1/2 lg:block">
+      <div className="relative w-full h-[45vh] sm:h-[50vh] lg:h-auto lg:w-1/2 shrink-0">
         <img
           className="absolute inset-0 h-full w-full object-cover"
           src="/hero.png"
@@ -105,18 +105,18 @@ export default function LandingAuth() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
         
         {/* Brand messaging over image */}
-        <div className="absolute bottom-16 left-16 right-16 text-white">
-          <h2 className="text-4xl lg:text-5xl font-bold mb-4 tracking-tight leading-tight">Sri Lanka&apos;s Premier Gift Concierge</h2>
-          <p className="text-lg opacity-90 max-w-lg leading-relaxed">
+        <div className="absolute bottom-8 lg:bottom-16 left-6 sm:left-12 lg:left-16 right-6 sm:right-12 lg:right-16 text-white pb-6 lg:pb-0 z-10">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-2 lg:mb-4 tracking-tight leading-tight drop-shadow-lg">Sri Lanka&apos;s Premier Gift Concierge</h2>
+          <p className="text-sm sm:text-base lg:text-lg opacity-95 max-w-lg leading-relaxed drop-shadow-md line-clamp-2 lg:line-clamp-none">
             Let Kavi help you find the perfect gift for your loved ones. Explore our exquisite collection of cakes, flowers, and premium hampers.
           </p>
         </div>
       </div>
 
       {/* Right side: Auth Form */}
-      <div className="flex w-full flex-col justify-center px-8 sm:px-12 lg:w-1/2 lg:px-24 xl:px-32 relative py-12">
+      <div className="flex flex-1 w-full flex-col justify-center px-6 sm:px-12 lg:w-1/2 lg:px-24 xl:px-32 relative py-8 lg:py-12 bg-white rounded-t-[2.5rem] -mt-8 lg:mt-0 lg:rounded-none z-20 shadow-[0_-12px_30px_rgba(0,0,0,0.1)] lg:shadow-none">
         {/* Top Navigation inside Auth Pane */}
-        <div className="absolute top-8 left-8 right-8 flex justify-between items-center">
+        <div className="absolute top-6 lg:top-8 left-6 sm:left-12 lg:left-8 right-6 sm:right-12 lg:right-8 flex justify-between items-center">
           <a className="font-bold text-primary hover:opacity-80 transition-opacity block w-28" href="#">
             <img alt="Kapruka Logo" className="w-full h-auto object-contain" src="/images.png" />
           </a>
@@ -126,12 +126,12 @@ export default function LandingAuth() {
           </button>
         </div>
 
-        <div className="w-full max-w-md mx-auto fade-in-up mt-12 lg:mt-0">
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-3">
+        <div className="w-full max-w-md mx-auto fade-in-up mt-16 lg:mt-0">
+          <div className="mb-8 lg:mb-10 text-center lg:text-left">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-slate-900 mb-2 lg:mb-3">
               {mode === "signin" ? "Welcome back" : "Create an account"}
             </h1>
-            <p className="text-base text-slate-500">
+            <p className="text-sm lg:text-base text-slate-500">
               {mode === "signin" 
                 ? "Enter your details to sign in to your Kapruka account." 
                 : "Join Kapruka to experience premium gift delivery in Sri Lanka."}
@@ -250,7 +250,7 @@ export default function LandingAuth() {
         </div>
         
         {/* Footer inside Auth Pane */}
-        <div className="absolute bottom-6 left-8 right-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 mt-8 gap-4">
+        <div className="absolute bottom-4 lg:bottom-6 left-6 sm:left-12 lg:left-8 right-6 sm:right-12 lg:right-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 mt-8 gap-3 lg:gap-4">
           <div>© 2024 Kapruka. All rights reserved.</div>
           <div className="flex gap-4">
             <a className="hover:text-slate-600 transition-colors" href="https://github.com/onel1234" target="_blank" rel="noopener noreferrer">Github</a>
