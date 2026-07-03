@@ -16,6 +16,8 @@ import {
   MapPin,
   Menu,
   MessageCircle,
+  Mic,
+  MicOff,
   Minus,
   PackageCheck,
   Plus,
@@ -334,6 +336,60 @@ export default function Home() {
     detailLevel: "balanced",
   });
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+
+  // Detect browser speech recognition support on mount
+  useEffect(() => {
+    setSpeechSupported(
+      typeof window !== "undefined" &&
+        ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
+    );
+  }, []);
+
+  function toggleListening() {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognitionAPI: typeof SpeechRecognition =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput((prev) => {
+        const base = prev.trimEnd();
+        return base ? `${base} ${transcript}` : transcript;
+      });
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      inputRef.current?.focus();
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
 
   const subtotal = useMemo(
     () => cart.reduce((total, item) => total + (item.product.price?.amount ?? 0) * item.quantity, 0),
@@ -929,6 +985,23 @@ export default function Home() {
                     className="h-12 min-w-0 flex-1 rounded-lg border border-[#dcc8a8] bg-white px-4 text-sm outline-none transition focus:border-[#cc2f2f] focus:ring-4 focus:ring-[#cc2f2f]/10"
                     placeholder="Ask for a gift, occasion, city, date, or budget..."
                   />
+                  {speechSupported && (
+                    <button
+                      type="button"
+                      onClick={toggleListening}
+                      aria-label={isListening ? "Stop listening" : "Start voice input"}
+                      className={`relative flex h-12 w-12 items-center justify-center rounded-lg border transition ${
+                        isListening
+                          ? "border-[#cc2f2f] bg-[#fff0f0] text-[#cc2f2f]"
+                          : "border-[#dcc8a8] bg-white text-[#85653a] hover:border-[#cc2f2f] hover:text-[#cc2f2f]"
+                      }`}
+                    >
+                      {isListening && (
+                        <span className="absolute inset-0 rounded-lg animate-ping bg-[#cc2f2f] opacity-20" />
+                      )}
+                      {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                    </button>
+                  )}
                   <button
                     type="submit"
                     disabled={isSending}
