@@ -283,7 +283,9 @@ export default function Home() {
   const [isSending, setIsSending] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isTrackOrderModalOpen, setIsTrackOrderModalOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [delivery, setDelivery] = useState<DeliveryCheck | null>(null);
   const [agentInsights, setAgentInsights] = useState<GiftAgentInsights | null>(null);
@@ -794,8 +796,14 @@ export default function Home() {
                 <span className="hidden md:inline">Sign out</span>
               </button>
             ) : null}
-            <button type="button" onClick={() => setIsCheckoutModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
+            <button type="button" onClick={() => setIsAssistantModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Assistant Style">
+              <SlidersHorizontal size={20} />
+            </button>
+            <button type="button" onClick={() => setIsCheckoutModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Live Cart & Checkout">
               <ShoppingBag size={20} />
+            </button>
+            <button type="button" onClick={() => setIsTrackOrderModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors" title="Track Order">
+              <PackageCheck size={20} />
             </button>
             <button type="button" onClick={() => setIsDrawerOpen(!isDrawerOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
               {isDrawerOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
@@ -1364,30 +1372,18 @@ export default function Home() {
           </section>
         </div>
       ) : null}
-      {isCheckoutModalOpen && (
+      
+      {isAssistantModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1d1a16] text-white shadow-2xl">
             <button 
-              onClick={() => setIsCheckoutModalOpen(false)}
+              onClick={() => setIsAssistantModalOpen(false)}
               className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors z-10"
             >
               <X size={18} />
             </button>
-<aside className="flex  flex-col bg-[#1d1a16] text-white">
-          <div className="border-b border-white/10 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[#f2c678]">Live Cart</p>
-                <h2 className="text-2xl font-semibold">Gift checkout</h2>
-              </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
-                <Heart size={20} />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-5">
-            <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
+            <div className="p-5 mt-4">
+              <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
                   <SlidersHorizontal size={18} />
@@ -1464,8 +1460,33 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {cart.length ? (
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1d1a16] text-white shadow-2xl">
+            <button 
+              onClick={() => setIsCheckoutModalOpen(false)}
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors z-10"
+            >
+              <X size={18} />
+            </button>
+            <div className="border-b border-white/10 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#f2c678]">Live Cart</p>
+                <h2 className="text-2xl font-semibold">Gift checkout</h2>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
+                <Heart size={20} />
+              </div>
+            </div>
+          </div>
+            <div className="p-5">
+              {cart.length ? (
               <div className="space-y-3">
                 {cart.map((item) => (
                   <div key={item.product.id} className="rounded-lg border border-white/10 bg-white/[0.06] p-3">
@@ -1607,13 +1628,27 @@ export default function Home() {
                 </p>
               ) : null}
             </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <form
+      {isTrackOrderModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1d1a16] text-white shadow-2xl">
+            <button 
+              onClick={() => setIsTrackOrderModalOpen(false)}
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors z-10"
+            >
+              <X size={18} />
+            </button>
+            <div className="p-5 mt-4">
+              <form
               onSubmit={(event) => {
                 event.preventDefault();
                 void submitOrderTracking();
               }}
-              className="mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-4"
+              className="mt-0 rounded-lg border border-white/10 bg-white/[0.06] p-4"
             >
               <div className="mb-4 flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
@@ -1704,8 +1739,7 @@ export default function Home() {
                 </div>
               ) : null}
             </form>
-          </div>
-        </aside>
+            </div>
           </div>
         </div>
       )}
