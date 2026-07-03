@@ -828,7 +828,6 @@ export default function Home() {
                   </p>
                 ) : null}
               </div>
-              </div>
             </nav>
           </div>
           <div className="p-4 border-t border-[#eadfc9] bg-[#fffdfa] shrink-0 flex flex-col gap-2">
