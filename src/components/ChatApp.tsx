@@ -268,6 +268,15 @@ function mergeReadiness(current: GiftAgentInsights | null, checkoutReadiness: Ch
   };
 }
 
+
+const LOADING_PHRASES = [
+  "Curating premium gifts...",
+  "Finding the perfect match...",
+  "Consulting the gift experts...",
+  "Wrapping up your options...",
+  "Exploring Kapruka's best...",
+];
+
 export default function Home() {
   const { data: session } = useSession();
   const [selectedLanguage, setSelectedLanguage] = useState<AppLanguage>("english");
@@ -281,6 +290,15 @@ export default function Home() {
   ]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isSending) return;
+    const interval = setInterval(() => {
+      setLoadingPhraseIndex((i) => (i + 1) % LOADING_PHRASES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [isSending]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
@@ -875,9 +893,12 @@ export default function Home() {
                   </div>
                 )})}
                 {isSending ? (
-                  <div className="flex max-w-[220px] items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-[#6c5d4a] shadow-sm">
-                    <Loader2 size={16} className="animate-spin" />
-                    Searching Kapruka...
+                  <div className="flex w-fit max-w-[280px] items-center gap-3 rounded-xl bg-white px-5 py-3.5 text-sm font-medium text-[#1f4f4a] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-[#eadfc9]">
+                    <div className="relative flex h-5 w-5 items-center justify-center">
+                      <Sparkles size={18} className="absolute animate-ping opacity-30 text-[#85653a]" />
+                      <Sparkles size={18} className="relative animate-pulse text-[#85653a]" />
+                    </div>
+                    <span className="animate-pulse">{LOADING_PHRASES[loadingPhraseIndex]}</span>
                   </div>
                 ) : null}
               </div>
