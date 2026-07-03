@@ -941,7 +941,7 @@ function buildGroundedReply(params: {
 
   if (!products.length) {
     if (queries.length === 0) {
-      return "Please acknowledge the user's message conversationally and continue helping them with their checkout or gift selection.";
+      return "I'm Kavi, your Kapruka gift concierge! 🎁 I'm here to help you find the perfect gift, check delivery availability, and create a pay link. Tell me who you're shopping for, the occasion, your budget, and the delivery city — and I'll get started!";
     }
 
     const searchedFor = queries.join(", ");
