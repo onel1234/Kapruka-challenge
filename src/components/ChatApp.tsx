@@ -1375,29 +1375,29 @@ export default function Home() {
       
       {isAssistantModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1d1a16] text-white shadow-2xl">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#fffaf0] text-[#1d1a16] shadow-2xl border border-[#eadfc9]">
             <button 
               onClick={() => setIsAssistantModalOpen(false)}
-              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors z-10"
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-#1d1a16 shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors z-10"
             >
               <X size={18} />
             </button>
-            <div className="p-5 mt-4">
-              <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
+            <div className="p-5 pt-14">
+              <div className="mb-5 rounded-lg border border-[#eadfc9] bg-#1d1a16 shadow-sm p-4">
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fffcf8] text-[#85653a] border border-[#eadfc9] shadow-sm">
                   <SlidersHorizontal size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#f2c678]">Assistant style</p>
-                  <p className="mt-1 text-xs text-white/55">
+                  <p className="text-sm font-semibold text-[#85653a]">Assistant style</p>
+                  <p className="mt-1 text-xs text-[#6c5d4a]">
                     {TONE_OPTIONS.find((option) => option.value === responsePreferences.tone)?.label} tone
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-3">
-                <label className="grid gap-1 text-xs text-white/55">
+                <label className="grid gap-1 text-xs text-[#6c5d4a]">
                   Tone
                   <select
                     value={responsePreferences.tone}
@@ -1407,7 +1407,7 @@ export default function Home() {
                         tone: event.target.value as ResponsePreferences["tone"],
                       }))
                     }
-                    className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                    className="h-10 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm font-semibold text-[#1d1a16] outline-none focus:border-[#1f4f4a]"
                   >
                     {TONE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -1418,7 +1418,7 @@ export default function Home() {
                 </label>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="grid gap-1 text-xs text-white/55">
+                  <label className="grid gap-1 text-xs text-[#6c5d4a]">
                     Emoji use
                     <select
                       value={responsePreferences.emojiMode}
@@ -1428,7 +1428,7 @@ export default function Home() {
                           emojiMode: event.target.value as ResponsePreferences["emojiMode"],
                         }))
                       }
-                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                      className="h-10 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm font-semibold text-[#1d1a16] outline-none focus:border-[#1f4f4a]"
                     >
                       {EMOJI_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -1438,7 +1438,7 @@ export default function Home() {
                     </select>
                   </label>
 
-                  <label className="grid gap-1 text-xs text-white/55">
+                  <label className="grid gap-1 text-xs text-[#6c5d4a]">
                     Detail
                     <select
                       value={responsePreferences.detailLevel}
@@ -1448,7 +1448,7 @@ export default function Home() {
                           detailLevel: event.target.value as ResponsePreferences["detailLevel"],
                         }))
                       }
-                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                      className="h-10 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm font-semibold text-[#1d1a16] outline-none focus:border-[#1f4f4a]"
                     >
                       {DETAIL_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -1467,20 +1467,20 @@ export default function Home() {
 
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1d1a16] text-white shadow-2xl">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#fffaf0] text-[#1d1a16] shadow-2xl border border-[#eadfc9]">
             <button 
               onClick={() => setIsCheckoutModalOpen(false)}
-              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors z-10"
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-#1d1a16 shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors z-10"
             >
               <X size={18} />
             </button>
-            <div className="border-b border-white/10 p-5">
+            <div className="border-b border-[#eadfc9] p-5 pt-8 pr-14">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-[#f2c678]">Live Cart</p>
+                <p className="text-sm font-semibold text-[#85653a]">Live Cart</p>
                 <h2 className="text-2xl font-semibold">Gift checkout</h2>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#cc2f2f] text-white shadow-sm">
                 <Heart size={20} />
               </div>
             </div>
@@ -1489,7 +1489,7 @@ export default function Home() {
               {cart.length ? (
               <div className="space-y-3">
                 {cart.map((item) => (
-                  <div key={item.product.id} className="rounded-lg border border-white/10 bg-white/[0.06] p-3">
+                  <div key={item.product.id} className="rounded-lg border border-[#eadfc9] bg-#1d1a16 shadow-sm p-3">
                     <div className="flex gap-3">
                       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white/10">
                         {item.product.image_url ? (
@@ -1499,11 +1499,11 @@ export default function Home() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-semibold">{item.product.name}</p>
-                        <p className="mt-1 text-sm text-[#f2c678]">{formatPrice(item.product)}</p>
+                        <p className="mt-1 text-sm text-[#85653a]">{formatPrice(item.product)}</p>
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center rounded-md border border-white/10">
+                      <div className="flex items-center rounded-md border border-[#eadfc9]">
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.product.id, -1)}
@@ -1525,7 +1525,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.product.id, -item.quantity)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-[#6c5d4a] transition hover:bg-white/10 hover:text-white"
                         aria-label="Remove item"
                       >
                         <Trash2 size={15} />
@@ -1535,14 +1535,14 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-white/10 bg-white/[0.06] p-5 text-sm leading-6 text-white/70">
+              <div className="rounded-lg border border-[#eadfc9] bg-#1d1a16 shadow-sm p-5 text-sm leading-6 text-[#6c5d4a]">
                 Add products from the gift shelf. When ready, enter delivery details and create a Kapruka pay link.
               </div>
             )}
 
-            <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
+            <div className="mt-5 rounded-lg border border-[#eadfc9] bg-#1d1a16 shadow-sm p-4">
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm text-white/70">Subtotal</span>
+                <span className="text-sm text-[#6c5d4a]">Subtotal</span>
                 <span className="text-xl font-semibold">
                   {new Intl.NumberFormat("en-LK", {
                     style: "currency",
@@ -1556,58 +1556,58 @@ export default function Home() {
                 <input
                   value={checkout.recipientName}
                   onChange={(event) => setCheckout({ ...checkout, recipientName: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  className="h-11 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm outline-none focus:border-[#1f4f4a]"
                   placeholder="Recipient name"
                 />
                 <input
                   value={checkout.recipientPhone}
                   onChange={(event) => setCheckout({ ...checkout, recipientPhone: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  className="h-11 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm outline-none focus:border-[#1f4f4a]"
                   placeholder="Recipient phone"
                 />
                 <input
                   value={checkout.senderName}
                   onChange={(event) => setCheckout({ ...checkout, senderName: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  className="h-11 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm outline-none focus:border-[#1f4f4a]"
                   placeholder="Sender name"
                 />
                 <input
                   value={checkout.address}
                   onChange={(event) => setCheckout({ ...checkout, address: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  className="h-11 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm outline-none focus:border-[#1f4f4a]"
                   placeholder="Delivery street address"
                 />
                 <div className="grid grid-cols-[1fr_145px] gap-2">
                   <div className="relative">
-                    <MapPin size={15} className="absolute left-3 top-3.5 text-white/45" />
+                    <MapPin size={15} className="absolute left-3 top-3.5 text-[#a68f70]" />
                     <input
                       value={checkout.city}
                       onChange={(event) => setCheckout({ ...checkout, city: event.target.value })}
-                      className="h-11 w-full rounded-lg border border-white/10 bg-black/20 pl-9 pr-3 text-sm outline-none focus:border-[#f2c678]"
+                      className="h-11 w-full rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] pl-9 pr-3 text-sm outline-none focus:border-[#1f4f4a]"
                       placeholder="City"
                     />
                   </div>
                   <div className="relative">
-                    <CalendarDays size={15} className="absolute left-3 top-3.5 text-white/45" />
+                    <CalendarDays size={15} className="absolute left-3 top-3.5 text-[#a68f70]" />
                     <input
                       type="date"
                       min={todayIso()}
                       value={checkout.date}
                       onChange={(event) => setCheckout({ ...checkout, date: event.target.value })}
-                      className="h-11 w-full rounded-lg border border-white/10 bg-black/20 pl-9 pr-2 text-sm outline-none focus:border-[#f2c678]"
+                      className="h-11 w-full rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] pl-9 pr-2 text-sm outline-none focus:border-[#1f4f4a]"
                     />
                   </div>
                 </div>
                 <textarea
                   value={checkout.giftMessage}
                   onChange={(event) => setCheckout({ ...checkout, giftMessage: event.target.value })}
-                  className="min-h-20 resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-sm outline-none focus:border-[#f2c678]"
+                  className="min-h-20 resize-none rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 py-3 text-sm outline-none focus:border-[#1f4f4a]"
                   placeholder="Gift message"
                 />
                 <textarea
                   value={checkout.instructions}
                   onChange={(event) => setCheckout({ ...checkout, instructions: event.target.value })}
-                  className="min-h-16 resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-sm outline-none focus:border-[#f2c678]"
+                  className="min-h-16 resize-none rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 py-3 text-sm outline-none focus:border-[#1f4f4a]"
                   placeholder="Delivery instructions"
                 />
               </div>
@@ -1616,7 +1616,7 @@ export default function Home() {
                 type="button"
                 onClick={() => void submitCheckout()}
                 disabled={!cart.length || isCheckingOut}
-                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#f2c678] font-semibold text-[#1d1a16] transition hover:bg-[#ffd98d] disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#1f4f4a] font-semibold text-[#1d1a16] transition hover:bg-[#173d39] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCheckingOut ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} />}
                 Create Kapruka pay link
@@ -1635,28 +1635,28 @@ export default function Home() {
 
       {isTrackOrderModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1d1a16] text-white shadow-2xl">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#fffaf0] text-[#1d1a16] shadow-2xl border border-[#eadfc9]">
             <button 
               onClick={() => setIsTrackOrderModalOpen(false)}
-              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors z-10"
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-#1d1a16 shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors z-10"
             >
               <X size={18} />
             </button>
-            <div className="p-5 mt-4">
+            <div className="p-5 pt-14">
               <form
               onSubmit={(event) => {
                 event.preventDefault();
                 void submitOrderTracking();
               }}
-              className="mt-0 rounded-lg border border-white/10 bg-white/[0.06] p-4"
+              className="mt-0 rounded-lg border border-[#eadfc9] bg-#1d1a16 shadow-sm p-4"
             >
               <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fffcf8] text-[#85653a] border border-[#eadfc9] shadow-sm">
                   <PackageCheck size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#f2c678]">Track paid order</p>
-                  <p className="mt-1 text-xs leading-5 text-white/60">
+                  <p className="text-sm font-semibold text-[#85653a]">Track paid order</p>
+                  <p className="mt-1 text-xs leading-5 text-[#6c5d4a]">
                     Use the Kapruka order number from the payment confirmation, not the checkout ref.
                   </p>
                 </div>
@@ -1666,13 +1666,13 @@ export default function Home() {
                 <input
                   value={orderNumber}
                   onChange={(event) => setOrderNumber(event.target.value)}
-                  className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-3 text-sm uppercase outline-none focus:border-[#f2c678]"
+                  className="h-11 min-w-0 flex-1 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] px-3 text-sm uppercase outline-none focus:border-[#1f4f4a]"
                   placeholder="VIMP34456CB2"
                 />
                 <button
                   type="submit"
                   disabled={isTrackingOrder}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f2c678] text-[#1d1a16] transition hover:bg-[#ffd98d] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#1f4f4a] text-white transition hover:bg-[#173d39] disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Track order"
                 >
                   {isTrackingOrder ? <Loader2 size={17} className="animate-spin" /> : <RefreshCw size={17} />}
@@ -1686,11 +1686,11 @@ export default function Home() {
               ) : null}
 
               {orderTracking ? (
-                <div className="mt-4 rounded-lg border border-white/10 bg-black/20 p-3">
+                <div className="mt-4 rounded-lg border border-[#eadfc9] bg-transparent text-[#2c261f] p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs text-white/55">Current status</p>
-                      <p className="mt-1 text-lg font-semibold text-white">{trackingStatusLabel(orderTracking)}</p>
+                      <p className="text-xs text-[#6c5d4a]">Current status</p>
+                      <p className="mt-1 text-lg font-semibold text-[#1d1a16]">{trackingStatusLabel(orderTracking)}</p>
                     </div>
                     <span className="rounded-md bg-[#1f7a55]/25 px-2 py-1 text-xs font-semibold text-[#9ff0ca]">
                       {orderTracking.order_number ?? orderNumber.trim().toUpperCase()}
@@ -1699,37 +1699,37 @@ export default function Home() {
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <dt className="text-white/45">Delivery date</dt>
-                      <dd className="mt-1 font-semibold text-white">{trackingDateLabel(orderTracking.delivery_date)}</dd>
+                      <dt className="text-[#a68f70]">Delivery date</dt>
+                      <dd className="mt-1 font-semibold text-[#1d1a16]">{trackingDateLabel(orderTracking.delivery_date)}</dd>
                     </div>
                     <div>
-                      <dt className="text-white/45">Amount</dt>
-                      <dd className="mt-1 font-semibold text-white">{orderTracking.amount ?? "Not available"}</dd>
+                      <dt className="text-[#a68f70]">Amount</dt>
+                      <dd className="mt-1 font-semibold text-[#1d1a16]">{orderTracking.amount ?? "Not available"}</dd>
                     </div>
                     <div>
-                      <dt className="text-white/45">Recipient</dt>
-                      <dd className="mt-1 truncate font-semibold text-white">
+                      <dt className="text-[#a68f70]">Recipient</dt>
+                      <dd className="mt-1 truncate font-semibold text-[#1d1a16]">
                         {orderTracking.recipient?.name ?? "Not available"}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-white/45">City</dt>
-                      <dd className="mt-1 truncate font-semibold text-white">
+                      <dt className="text-[#a68f70]">City</dt>
+                      <dd className="mt-1 truncate font-semibold text-[#1d1a16]">
                         {orderTracking.recipient?.city ?? "Not available"}
                       </dd>
                     </div>
                   </dl>
 
                   {orderTracking.progress?.length ? (
-                    <div className="mt-4 border-t border-white/10 pt-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">Progress</p>
+                    <div className="mt-4 border-t border-[#eadfc9] pt-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#a68f70]">Progress</p>
                       <div className="mt-3 space-y-2">
                         {orderTracking.progress.slice(0, 5).map((step, index) => (
                           <div key={`${step.step ?? "step"}-${index}`} className="flex gap-2 text-xs">
                             <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f2c678]" />
                             <div>
-                              <p className="font-semibold text-white">{step.step ?? "Update"}</p>
-                              {step.timestamp ? <p className="mt-0.5 text-white/50">{step.timestamp}</p> : null}
+                              <p className="font-semibold text-[#1d1a16]">{step.step ?? "Update"}</p>
+                              {step.timestamp ? <p className="mt-0.5 text-[#a68f70]">{step.timestamp}</p> : null}
                             </div>
                           </div>
                         ))}
