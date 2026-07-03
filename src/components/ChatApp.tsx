@@ -283,6 +283,7 @@ export default function Home() {
   const [isSending, setIsSending] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [delivery, setDelivery] = useState<DeliveryCheck | null>(null);
   const [agentInsights, setAgentInsights] = useState<GiftAgentInsights | null>(null);
@@ -742,341 +743,6 @@ export default function Home() {
                 ) : null}
               </div>
             </nav>
-            <div className="mt-auto">
-<aside className="flex  flex-col bg-[#1d1a16] text-white">
-          <div className="border-b border-white/10 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[#f2c678]">Live Cart</p>
-                <h2 className="text-2xl font-semibold">Gift checkout</h2>
-              </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
-                <Heart size={20} />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-5">
-            <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
-                  <SlidersHorizontal size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#f2c678]">Assistant style</p>
-                  <p className="mt-1 text-xs text-white/55">
-                    {TONE_OPTIONS.find((option) => option.value === responsePreferences.tone)?.label} tone
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <label className="grid gap-1 text-xs text-white/55">
-                  Tone
-                  <select
-                    value={responsePreferences.tone}
-                    onChange={(event) =>
-                      setResponsePreferences((current) => ({
-                        ...current,
-                        tone: event.target.value as ResponsePreferences["tone"],
-                      }))
-                    }
-                    className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
-                  >
-                    {TONE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="grid gap-1 text-xs text-white/55">
-                    Emoji use
-                    <select
-                      value={responsePreferences.emojiMode}
-                      onChange={(event) =>
-                        setResponsePreferences((current) => ({
-                          ...current,
-                          emojiMode: event.target.value as ResponsePreferences["emojiMode"],
-                        }))
-                      }
-                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
-                    >
-                      {EMOJI_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="grid gap-1 text-xs text-white/55">
-                    Detail
-                    <select
-                      value={responsePreferences.detailLevel}
-                      onChange={(event) =>
-                        setResponsePreferences((current) => ({
-                          ...current,
-                          detailLevel: event.target.value as ResponsePreferences["detailLevel"],
-                        }))
-                      }
-                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
-                    >
-                      {DETAIL_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {cart.length ? (
-              <div className="space-y-3">
-                {cart.map((item) => (
-                  <div key={item.product.id} className="rounded-lg border border-white/10 bg-white/[0.06] p-3">
-                    <div className="flex gap-3">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white/10">
-                        {item.product.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={item.product.image_url} alt="" className="h-full w-full object-cover" />
-                        ) : null}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-sm font-semibold">{item.product.name}</p>
-                        <p className="mt-1 text-sm text-[#f2c678]">{formatPrice(item.product)}</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center rounded-md border border-white/10">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.product.id, -1)}
-                          className="flex h-8 w-8 items-center justify-center"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="w-8 text-center text-sm">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.product.id, 1)}
-                          className="flex h-8 w-8 items-center justify-center"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.product.id, -item.quantity)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-white/10 bg-white/[0.06] p-5 text-sm leading-6 text-white/70">
-                Add products from the gift shelf. When ready, enter delivery details and create a Kapruka pay link.
-              </div>
-            )}
-
-            <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm text-white/70">Subtotal</span>
-                <span className="text-xl font-semibold">
-                  {new Intl.NumberFormat("en-LK", {
-                    style: "currency",
-                    currency: "LKR",
-                    maximumFractionDigits: 0,
-                  }).format(subtotal)}
-                </span>
-              </div>
-
-              <div className="grid gap-3">
-                <input
-                  value={checkout.recipientName}
-                  onChange={(event) => setCheckout({ ...checkout, recipientName: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
-                  placeholder="Recipient name"
-                />
-                <input
-                  value={checkout.recipientPhone}
-                  onChange={(event) => setCheckout({ ...checkout, recipientPhone: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
-                  placeholder="Recipient phone"
-                />
-                <input
-                  value={checkout.senderName}
-                  onChange={(event) => setCheckout({ ...checkout, senderName: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
-                  placeholder="Sender name"
-                />
-                <input
-                  value={checkout.address}
-                  onChange={(event) => setCheckout({ ...checkout, address: event.target.value })}
-                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
-                  placeholder="Delivery street address"
-                />
-                <div className="grid grid-cols-[1fr_145px] gap-2">
-                  <div className="relative">
-                    <MapPin size={15} className="absolute left-3 top-3.5 text-white/45" />
-                    <input
-                      value={checkout.city}
-                      onChange={(event) => setCheckout({ ...checkout, city: event.target.value })}
-                      className="h-11 w-full rounded-lg border border-white/10 bg-black/20 pl-9 pr-3 text-sm outline-none focus:border-[#f2c678]"
-                      placeholder="City"
-                    />
-                  </div>
-                  <div className="relative">
-                    <CalendarDays size={15} className="absolute left-3 top-3.5 text-white/45" />
-                    <input
-                      type="date"
-                      min={todayIso()}
-                      value={checkout.date}
-                      onChange={(event) => setCheckout({ ...checkout, date: event.target.value })}
-                      className="h-11 w-full rounded-lg border border-white/10 bg-black/20 pl-9 pr-2 text-sm outline-none focus:border-[#f2c678]"
-                    />
-                  </div>
-                </div>
-                <textarea
-                  value={checkout.giftMessage}
-                  onChange={(event) => setCheckout({ ...checkout, giftMessage: event.target.value })}
-                  className="min-h-20 resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-sm outline-none focus:border-[#f2c678]"
-                  placeholder="Gift message"
-                />
-                <textarea
-                  value={checkout.instructions}
-                  onChange={(event) => setCheckout({ ...checkout, instructions: event.target.value })}
-                  className="min-h-16 resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-sm outline-none focus:border-[#f2c678]"
-                  placeholder="Delivery instructions"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void submitCheckout()}
-                disabled={!cart.length || isCheckingOut}
-                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#f2c678] font-semibold text-[#1d1a16] transition hover:bg-[#ffd98d] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isCheckingOut ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} />}
-                Create Kapruka pay link
-              </button>
-
-              {checkoutError ? (
-                <p className="mt-3 rounded-lg border border-[#ff8f8f]/30 bg-[#7a1f1f]/40 p-3 text-sm text-[#ffd0d0]">
-                  {checkoutError}
-                </p>
-              ) : null}
-            </div>
-
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void submitOrderTracking();
-              }}
-              className="mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-4"
-            >
-              <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
-                  <PackageCheck size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#f2c678]">Track paid order</p>
-                  <p className="mt-1 text-xs leading-5 text-white/60">
-                    Use the Kapruka order number from the payment confirmation, not the checkout ref.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  value={orderNumber}
-                  onChange={(event) => setOrderNumber(event.target.value)}
-                  className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-3 text-sm uppercase outline-none focus:border-[#f2c678]"
-                  placeholder="VIMP34456CB2"
-                />
-                <button
-                  type="submit"
-                  disabled={isTrackingOrder}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f2c678] text-[#1d1a16] transition hover:bg-[#ffd98d] disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="Track order"
-                >
-                  {isTrackingOrder ? <Loader2 size={17} className="animate-spin" /> : <RefreshCw size={17} />}
-                </button>
-              </div>
-
-              {trackingError ? (
-                <p className="mt-3 rounded-lg border border-[#ff8f8f]/30 bg-[#7a1f1f]/40 p-3 text-sm text-[#ffd0d0]">
-                  {trackingError}
-                </p>
-              ) : null}
-
-              {orderTracking ? (
-                <div className="mt-4 rounded-lg border border-white/10 bg-black/20 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-white/55">Current status</p>
-                      <p className="mt-1 text-lg font-semibold text-white">{trackingStatusLabel(orderTracking)}</p>
-                    </div>
-                    <span className="rounded-md bg-[#1f7a55]/25 px-2 py-1 text-xs font-semibold text-[#9ff0ca]">
-                      {orderTracking.order_number ?? orderNumber.trim().toUpperCase()}
-                    </span>
-                  </div>
-
-                  <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <dt className="text-white/45">Delivery date</dt>
-                      <dd className="mt-1 font-semibold text-white">{trackingDateLabel(orderTracking.delivery_date)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-white/45">Amount</dt>
-                      <dd className="mt-1 font-semibold text-white">{orderTracking.amount ?? "Not available"}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-white/45">Recipient</dt>
-                      <dd className="mt-1 truncate font-semibold text-white">
-                        {orderTracking.recipient?.name ?? "Not available"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-white/45">City</dt>
-                      <dd className="mt-1 truncate font-semibold text-white">
-                        {orderTracking.recipient?.city ?? "Not available"}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  {orderTracking.progress?.length ? (
-                    <div className="mt-4 border-t border-white/10 pt-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">Progress</p>
-                      <div className="mt-3 space-y-2">
-                        {orderTracking.progress.slice(0, 5).map((step, index) => (
-                          <div key={`${step.step ?? "step"}-${index}`} className="flex gap-2 text-xs">
-                            <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f2c678]" />
-                            <div>
-                              <p className="font-semibold text-white">{step.step ?? "Update"}</p>
-                              {step.timestamp ? <p className="mt-0.5 text-white/50">{step.timestamp}</p> : null}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </form>
-          </div>
-        </aside>
-            </div>
           </div>
         </div>
       </aside>
@@ -1128,6 +794,9 @@ export default function Home() {
                 <span className="hidden md:inline">Sign out</span>
               </button>
             ) : null}
+            <button type="button" onClick={() => setIsCheckoutModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
+              <ShoppingBag size={20} />
+            </button>
             <button type="button" onClick={() => setIsDrawerOpen(!isDrawerOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm border border-[#eadfc9] text-[#5d5144] hover:border-[#1f4f4a] hover:text-[#1f4f4a] transition-colors">
               {isDrawerOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
             </button>
@@ -1695,6 +1364,351 @@ export default function Home() {
           </section>
         </div>
       ) : null}
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1d1a16] text-white shadow-2xl">
+            <button 
+              onClick={() => setIsCheckoutModalOpen(false)}
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors z-10"
+            >
+              <X size={18} />
+            </button>
+<aside className="flex  flex-col bg-[#1d1a16] text-white">
+          <div className="border-b border-white/10 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#f2c678]">Live Cart</p>
+                <h2 className="text-2xl font-semibold">Gift checkout</h2>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
+                <Heart size={20} />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5">
+            <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
+                  <SlidersHorizontal size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#f2c678]">Assistant style</p>
+                  <p className="mt-1 text-xs text-white/55">
+                    {TONE_OPTIONS.find((option) => option.value === responsePreferences.tone)?.label} tone
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                <label className="grid gap-1 text-xs text-white/55">
+                  Tone
+                  <select
+                    value={responsePreferences.tone}
+                    onChange={(event) =>
+                      setResponsePreferences((current) => ({
+                        ...current,
+                        tone: event.target.value as ResponsePreferences["tone"],
+                      }))
+                    }
+                    className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                  >
+                    {TONE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="grid gap-1 text-xs text-white/55">
+                    Emoji use
+                    <select
+                      value={responsePreferences.emojiMode}
+                      onChange={(event) =>
+                        setResponsePreferences((current) => ({
+                          ...current,
+                          emojiMode: event.target.value as ResponsePreferences["emojiMode"],
+                        }))
+                      }
+                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                    >
+                      {EMOJI_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="grid gap-1 text-xs text-white/55">
+                    Detail
+                    <select
+                      value={responsePreferences.detailLevel}
+                      onChange={(event) =>
+                        setResponsePreferences((current) => ({
+                          ...current,
+                          detailLevel: event.target.value as ResponsePreferences["detailLevel"],
+                        }))
+                      }
+                      className="h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-semibold text-white outline-none focus:border-[#f2c678]"
+                    >
+                      {DETAIL_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {cart.length ? (
+              <div className="space-y-3">
+                {cart.map((item) => (
+                  <div key={item.product.id} className="rounded-lg border border-white/10 bg-white/[0.06] p-3">
+                    <div className="flex gap-3">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white/10">
+                        {item.product.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={item.product.image_url} alt="" className="h-full w-full object-cover" />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-semibold">{item.product.name}</p>
+                        <p className="mt-1 text-sm text-[#f2c678]">{formatPrice(item.product)}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center rounded-md border border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.product.id, -1)}
+                          className="flex h-8 w-8 items-center justify-center"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="w-8 text-center text-sm">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.product.id, 1)}
+                          className="flex h-8 w-8 items-center justify-center"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.product.id, -item.quantity)}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-white/[0.06] p-5 text-sm leading-6 text-white/70">
+                Add products from the gift shelf. When ready, enter delivery details and create a Kapruka pay link.
+              </div>
+            )}
+
+            <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-sm text-white/70">Subtotal</span>
+                <span className="text-xl font-semibold">
+                  {new Intl.NumberFormat("en-LK", {
+                    style: "currency",
+                    currency: "LKR",
+                    maximumFractionDigits: 0,
+                  }).format(subtotal)}
+                </span>
+              </div>
+
+              <div className="grid gap-3">
+                <input
+                  value={checkout.recipientName}
+                  onChange={(event) => setCheckout({ ...checkout, recipientName: event.target.value })}
+                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  placeholder="Recipient name"
+                />
+                <input
+                  value={checkout.recipientPhone}
+                  onChange={(event) => setCheckout({ ...checkout, recipientPhone: event.target.value })}
+                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  placeholder="Recipient phone"
+                />
+                <input
+                  value={checkout.senderName}
+                  onChange={(event) => setCheckout({ ...checkout, senderName: event.target.value })}
+                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  placeholder="Sender name"
+                />
+                <input
+                  value={checkout.address}
+                  onChange={(event) => setCheckout({ ...checkout, address: event.target.value })}
+                  className="h-11 rounded-lg border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-[#f2c678]"
+                  placeholder="Delivery street address"
+                />
+                <div className="grid grid-cols-[1fr_145px] gap-2">
+                  <div className="relative">
+                    <MapPin size={15} className="absolute left-3 top-3.5 text-white/45" />
+                    <input
+                      value={checkout.city}
+                      onChange={(event) => setCheckout({ ...checkout, city: event.target.value })}
+                      className="h-11 w-full rounded-lg border border-white/10 bg-black/20 pl-9 pr-3 text-sm outline-none focus:border-[#f2c678]"
+                      placeholder="City"
+                    />
+                  </div>
+                  <div className="relative">
+                    <CalendarDays size={15} className="absolute left-3 top-3.5 text-white/45" />
+                    <input
+                      type="date"
+                      min={todayIso()}
+                      value={checkout.date}
+                      onChange={(event) => setCheckout({ ...checkout, date: event.target.value })}
+                      className="h-11 w-full rounded-lg border border-white/10 bg-black/20 pl-9 pr-2 text-sm outline-none focus:border-[#f2c678]"
+                    />
+                  </div>
+                </div>
+                <textarea
+                  value={checkout.giftMessage}
+                  onChange={(event) => setCheckout({ ...checkout, giftMessage: event.target.value })}
+                  className="min-h-20 resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-sm outline-none focus:border-[#f2c678]"
+                  placeholder="Gift message"
+                />
+                <textarea
+                  value={checkout.instructions}
+                  onChange={(event) => setCheckout({ ...checkout, instructions: event.target.value })}
+                  className="min-h-16 resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-sm outline-none focus:border-[#f2c678]"
+                  placeholder="Delivery instructions"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void submitCheckout()}
+                disabled={!cart.length || isCheckingOut}
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#f2c678] font-semibold text-[#1d1a16] transition hover:bg-[#ffd98d] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isCheckingOut ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} />}
+                Create Kapruka pay link
+              </button>
+
+              {checkoutError ? (
+                <p className="mt-3 rounded-lg border border-[#ff8f8f]/30 bg-[#7a1f1f]/40 p-3 text-sm text-[#ffd0d0]">
+                  {checkoutError}
+                </p>
+              ) : null}
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitOrderTracking();
+              }}
+              className="mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-4"
+            >
+              <div className="mb-4 flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#f2c678]">
+                  <PackageCheck size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#f2c678]">Track paid order</p>
+                  <p className="mt-1 text-xs leading-5 text-white/60">
+                    Use the Kapruka order number from the payment confirmation, not the checkout ref.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={orderNumber}
+                  onChange={(event) => setOrderNumber(event.target.value)}
+                  className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-3 text-sm uppercase outline-none focus:border-[#f2c678]"
+                  placeholder="VIMP34456CB2"
+                />
+                <button
+                  type="submit"
+                  disabled={isTrackingOrder}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f2c678] text-[#1d1a16] transition hover:bg-[#ffd98d] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Track order"
+                >
+                  {isTrackingOrder ? <Loader2 size={17} className="animate-spin" /> : <RefreshCw size={17} />}
+                </button>
+              </div>
+
+              {trackingError ? (
+                <p className="mt-3 rounded-lg border border-[#ff8f8f]/30 bg-[#7a1f1f]/40 p-3 text-sm text-[#ffd0d0]">
+                  {trackingError}
+                </p>
+              ) : null}
+
+              {orderTracking ? (
+                <div className="mt-4 rounded-lg border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-white/55">Current status</p>
+                      <p className="mt-1 text-lg font-semibold text-white">{trackingStatusLabel(orderTracking)}</p>
+                    </div>
+                    <span className="rounded-md bg-[#1f7a55]/25 px-2 py-1 text-xs font-semibold text-[#9ff0ca]">
+                      {orderTracking.order_number ?? orderNumber.trim().toUpperCase()}
+                    </span>
+                  </div>
+
+                  <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <dt className="text-white/45">Delivery date</dt>
+                      <dd className="mt-1 font-semibold text-white">{trackingDateLabel(orderTracking.delivery_date)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-white/45">Amount</dt>
+                      <dd className="mt-1 font-semibold text-white">{orderTracking.amount ?? "Not available"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-white/45">Recipient</dt>
+                      <dd className="mt-1 truncate font-semibold text-white">
+                        {orderTracking.recipient?.name ?? "Not available"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-white/45">City</dt>
+                      <dd className="mt-1 truncate font-semibold text-white">
+                        {orderTracking.recipient?.city ?? "Not available"}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {orderTracking.progress?.length ? (
+                    <div className="mt-4 border-t border-white/10 pt-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">Progress</p>
+                      <div className="mt-3 space-y-2">
+                        {orderTracking.progress.slice(0, 5).map((step, index) => (
+                          <div key={`${step.step ?? "step"}-${index}`} className="flex gap-2 text-xs">
+                            <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f2c678]" />
+                            <div>
+                              <p className="font-semibold text-white">{step.step ?? "Update"}</p>
+                              {step.timestamp ? <p className="mt-0.5 text-white/50">{step.timestamp}</p> : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </form>
+          </div>
+        </aside>
+          </div>
+        </div>
+      )}
     </main>
 
   );
