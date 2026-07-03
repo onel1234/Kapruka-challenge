@@ -72,7 +72,7 @@ type ConversationSummary = {
 const STARTERS = [
   "Birthday gift for my amma in Kandy under Rs. 10,000",
   "Anniversary surprise with flowers and chocolate for Colombo tomorrow",
-  "α╢╕α╢º α╢àα╢╕α╖èα╢╕α╖Åα╢º birthday gift α╢æα╢Üα╢Üα╖è α╢òα╢▒α╖Ü",
+  "අම්මාට රු. 10,000 කට අඩුවෙන් උපන්දින තෑග්ගක්",
   "Mata ammata mal gift ekak one Rs. 10,000 aduwen",
   "Amma ku pookal venum Kandy ku Rs. 10,000 kulla",
   "Build a cute gift bundle for a sister who loves chocolate",
@@ -80,9 +80,9 @@ const STARTERS = [
 
 const LANGUAGE_OPTIONS: Array<{ value: AppLanguage; label: string }> = [
   { value: "english", label: "English" },
-  { value: "sinhala", label: "α╖âα╖Æα╢éα╖äα╢╜" },
+  { value: "sinhala", label: "සිංහල" },
   { value: "singlish", label: "Singlish" },
-  { value: "tamil", label: "α«ñα««α«┐α«┤α»ì" },
+  { value: "tamil", label: "தமிழ்" },
   { value: "tanglish", label: "Tanglish" },
 ];
 
