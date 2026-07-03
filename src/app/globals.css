@@ -60,15 +60,16 @@
   --spacing-margin-desktop: 64px;
   --spacing-gutter: 24px;
 
-  --font-display-lg: var(--font-epilogue);
-  --font-body-md: var(--font-geist-sans);
-  --font-title-lg: var(--font-geist-sans);
-  --font-headline-lg: var(--font-epilogue);
-  --font-body-lg: var(--font-geist-sans);
-  --font-display-sm: var(--font-epilogue);
-  --font-label-md: var(--font-geist-sans);
-  --font-headline-lg-mobile: var(--font-epilogue);
-  --font-label-sm: var(--font-geist-sans);
+  --font-display-lg: var(--font-manrope);
+  --font-body-md: var(--font-manrope);
+  --font-title-lg: var(--font-manrope);
+  --font-headline-lg: var(--font-manrope);
+  --font-body-lg: var(--font-manrope);
+  --font-display-sm: var(--font-manrope);
+  --font-label-md: var(--font-manrope);
+  --font-headline-lg-mobile: var(--font-manrope);
+  --font-label-sm: var(--font-manrope);
+  --font-sans: var(--font-manrope);
 
   --text-display-lg: 48px;
   --text-display-lg--line-height: 56px;
@@ -114,7 +115,7 @@
 body {
   background: var(--color-background);
   color: var(--color-on-background);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
 }
 
 button,

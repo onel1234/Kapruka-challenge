@@ -2,15 +2,15 @@
 
 import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type AuthMode = "signin" | "signup";
 
 async function readErrorMessage(response: Response, fallback: string) {
   const text = await response.text();
-
   if (!text) return fallback;
-
   try {
     const data = JSON.parse(text) as { error?: string; code?: string };
     return data.code ? `${data.error ?? fallback} (${data.code})` : data.error ?? fallback;
@@ -27,15 +27,14 @@ export default function LandingAuth() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const authError = new URLSearchParams(window.location.search).get("error");
-
     if (authError) {
       const timeoutId = window.setTimeout(() => {
         setError(`Authentication failed (${authError}). Please try again.`);
       }, 0);
-
       return () => window.clearTimeout(timeoutId);
     }
   }, []);
@@ -80,14 +79,11 @@ export default function LandingAuth() {
   async function continueAsGuest() {
     setError(null);
     setIsGuestLoading(true);
-
     try {
       const response = await fetch("/api/guest-session", { method: "POST" });
-
       if (!response.ok) {
         throw new Error(await readErrorMessage(response, "Could not start guest session."));
       }
-
       window.location.href = "/chat";
     } catch (guestError) {
       setError(guestError instanceof Error ? guestError.message : "Guest mode failed.");
@@ -97,87 +93,95 @@ export default function LandingAuth() {
   }
 
   return (
-    <div className="bg-surface-cream text-on-background min-h-screen flex flex-col relative overflow-hidden font-body-md">
-      {/* Ambient Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden opacity-40"></div>
-
-      {/* Floating Decorative Elements */}
-      <div className="absolute inset-0 z-0 pointer-events-none hidden md:block">
-        <img alt="Cake" className="absolute top-[20%] left-[15%] w-24 h-24 object-contain opacity-40 floating-icon" src="/cake.png" />
-        <img alt="Flower" className="absolute top-[60%] left-[10%] w-20 h-20 object-contain opacity-40 floating-icon-delayed" src="/flower.png" />
-        <img alt="Chocolate" className="absolute top-[30%] right-[15%] w-20 h-20 object-contain opacity-40 floating-icon" src="/chocolate.png" />
-        <img alt="Food" className="absolute top-[70%] right-[10%] w-24 h-24 object-contain opacity-40 floating-icon-delayed" src="/food.png" />
+    <div className="flex min-h-screen bg-white font-sans text-slate-900">
+      {/* Left side: Hero Image */}
+      <div className="relative hidden w-1/2 lg:block">
+        <img
+          className="absolute inset-0 h-full w-full object-cover"
+          src="/hero.png"
+          alt="Premium gifts, cakes, and flowers from Kapruka"
+        />
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+        
+        {/* Brand messaging over image */}
+        <div className="absolute bottom-16 left-16 right-16 text-white">
+          <h2 className="text-4xl lg:text-5xl font-bold mb-4 tracking-tight leading-tight">Sri Lanka&apos;s Premier Gift Concierge</h2>
+          <p className="text-lg opacity-90 max-w-lg leading-relaxed">
+            Let Kavi help you find the perfect gift for your loved ones. Explore our exquisite collection of cakes, flowers, and premium hampers.
+          </p>
+        </div>
       </div>
 
-      {/* TopNavBar */}
-      <nav className="bg-white fixed top-0 w-full flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 z-50">
-        <div className="flex items-center">
-          <a className="font-display-sm text-display-sm font-bold text-primary hover:opacity-80 transition-opacity hover:scale-[1.02] transition-transform duration-300 block w-32" href="#">
-            <img alt="Kapruka Logo" className="w-full h-auto object-contain brightness-0" src="/logo.png" />
+      {/* Right side: Auth Form */}
+      <div className="flex w-full flex-col justify-center px-8 sm:px-12 lg:w-1/2 lg:px-24 xl:px-32 relative py-12">
+        {/* Top Navigation inside Auth Pane */}
+        <div className="absolute top-8 left-8 right-8 flex justify-between items-center">
+          <a className="font-bold text-primary hover:opacity-80 transition-opacity block w-28" href="#">
+            <img alt="Kapruka Logo" className="w-full h-auto object-contain" src="/images.png" />
           </a>
-        </div>
-        <div className="hidden md:flex items-center space-x-6 font-body-md text-body-md"></div>
-        <div className="flex items-center space-x-4">
-          <button className="text-primary hover:opacity-80 transition-opacity">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>help</span>
+          <button onClick={() => setIsModalOpen(true)} className="text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm font-medium">
+            <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 0" }}>info</span>
+            About Kavi
           </button>
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="flex-grow flex items-center justify-center relative z-10 px-margin-mobile pt-[120px] pb-[80px]">
-        <div className="glass-panel rounded-2xl w-full max-w-[480px] p-8 md:p-12 fade-in-up">
-          <div className="text-center mb-8">
-            <h1 className="font-display-sm text-display-sm text-primary mb-2">Meet Kavi, your Gift Concierge</h1>
-            <p className="font-body-md text-body-md text-on-surface-variant">Let me help you find the perfect gift for your loved ones.</p>
+        <div className="w-full max-w-md mx-auto fade-in-up mt-12 lg:mt-0">
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-3">
+              {mode === "signin" ? "Welcome back" : "Create an account"}
+            </h1>
+            <p className="text-base text-slate-500">
+              {mode === "signin" 
+                ? "Enter your details to sign in to your Kapruka account." 
+                : "Join Kapruka to experience premium gift delivery in Sri Lanka."}
+            </p>
           </div>
 
-          <form className="space-y-6" onSubmit={submitAuth}>
-            <div className="space-y-4">
-              {mode === "signup" && (
-                <div className="relative">
-                  <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1 ml-1" htmlFor="name">Full Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className="w-full bg-surface-cream/50 border border-outline-variant/30 rounded-lg px-4 py-3 font-body-md text-body-md text-on-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-on-surface-variant/50"
-                    placeholder="Enter your name"
-                  />
-                </div>
-              )}
-
-              <div className="relative">
-                <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1 ml-1" htmlFor="email">Email or Phone</label>
+          <form className="space-y-5" onSubmit={submitAuth}>
+            {mode === "signup" && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="name">Full Name</label>
                 <input
-                  id="email"
+                  id="name"
                   type="text"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full bg-surface-cream/50 border border-outline-variant/30 rounded-lg px-4 py-3 font-body-md text-body-md text-on-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-on-surface-variant/50"
-                  placeholder="Enter your details"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#fdd818]/50 focus:border-[#fdd818] transition-all bg-slate-50 hover:bg-white placeholder:text-slate-400"
+                  placeholder="Enter your name"
                 />
               </div>
+            )}
 
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="email">Email or Phone</label>
+              <input
+                id="email"
+                type="text"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#fdd818]/50 focus:border-[#fdd818] transition-all bg-slate-50 hover:bg-white placeholder:text-slate-400"
+                placeholder="Enter your details"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="password">Password</label>
               <div className="relative">
-                <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1 ml-1" htmlFor="password">Password</label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    className="w-full bg-surface-cream/50 border border-outline-variant/30 rounded-lg px-4 py-3 font-body-md text-body-md text-on-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-on-surface-variant/50 pr-12"
-                    placeholder="••••••••"
-                  />
-                  <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-on-surface-variant">Hide</button>
-                </div>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 pr-16 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#fdd818]/50 focus:border-[#fdd818] transition-all bg-slate-50 hover:bg-white placeholder:text-slate-400"
+                  placeholder="••••••••"
+                />
+                <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">Hide</button>
               </div>
             </div>
 
             {error && (
-              <p className="rounded-lg border border-error-red/30 bg-error-red/10 p-3 text-sm text-error-red font-label-md">
+              <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
                 {error}
               </p>
             )}
@@ -185,19 +189,19 @@ export default function LandingAuth() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 bg-[#fdd818] text-[#1b1c1a] font-label-md text-label-md py-4 rounded-xl hover:scale-[1.02] transition-transform duration-300 shadow-[0_4px_14px_0_rgba(253,216,24,0.39)] hover:shadow-[0_6px_20px_rgba(253,216,24,0.23)] disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 bg-[#fdd818] text-[#1b1c1a] font-semibold text-base py-3.5 rounded-xl hover:bg-[#ebd019] transition-all duration-200 shadow-sm disabled:opacity-60 mt-4"
             >
-              {isLoading && <Loader2 size={17} className="animate-spin" />}
+              {isLoading && <Loader2 size={18} className="animate-spin" />}
               {mode === "signin" ? "Sign in" : "Create account"}
             </button>
           </form>
 
           <div className="mt-8 mb-6 relative">
             <div aria-hidden="true" className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-outline-variant/30"></div>
+              <div className="w-full border-t border-slate-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white/50 text-on-surface-variant font-label-sm text-label-sm backdrop-blur-sm rounded-full">Or Sign in with</span>
+              <span className="px-4 bg-white text-slate-500 font-medium">Or continue with</span>
             </div>
           </div>
 
@@ -205,7 +209,7 @@ export default function LandingAuth() {
             <button
               type="button"
               onClick={() => signIn("google", { callbackUrl: "/chat" })}
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-outline-variant/30 bg-white/50 hover:bg-white transition-colors font-label-md text-label-md text-on-background"
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors font-medium text-slate-700 shadow-sm"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
@@ -219,44 +223,121 @@ export default function LandingAuth() {
               type="button"
               onClick={() => void continueAsGuest()}
               disabled={isGuestLoading}
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-outline-variant/30 bg-white/50 hover:bg-white transition-colors font-label-md text-label-md text-on-background disabled:opacity-60"
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors font-medium text-slate-700 shadow-sm disabled:opacity-60"
             >
-              {isGuestLoading ? <Loader2 size={17} className="animate-spin" /> : <span className="material-symbols-outlined text-[20px]">person</span>}
-              Continue as Guest
+              {isGuestLoading ? <Loader2 size={18} className="animate-spin" /> : <span className="material-symbols-outlined text-[20px]">person</span>}
+              Guest
             </button>
           </div>
 
-          <div className="mt-8 text-center font-label-md text-label-md text-on-surface-variant">
+          <div className="mt-8 text-center text-sm text-slate-500">
             {mode === "signin" ? (
               <>
                 Don&apos;t have an account?{" "}
-                <button type="button" onClick={() => setMode("signup")} className="text-primary font-semibold hover:underline">
+                <button type="button" onClick={() => setMode("signup")} className="text-slate-900 font-semibold hover:underline">
                   Sign up
                 </button>
               </>
             ) : (
               <>
                 Already have an account?{" "}
-                <button type="button" onClick={() => setMode("signin")} className="text-primary font-semibold hover:underline">
+                <button type="button" onClick={() => setMode("signin")} className="text-slate-900 font-semibold hover:underline">
                   Sign in
                 </button>
               </>
             )}
           </div>
         </div>
-      </main>
+        
+        {/* Footer inside Auth Pane */}
+        <div className="absolute bottom-6 left-8 right-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 mt-8 gap-4">
+          <div>© 2024 Kapruka. All rights reserved.</div>
+          <div className="flex gap-4">
+            <a className="hover:text-slate-600 transition-colors" href="https://github.com/onel1234" target="_blank" rel="noopener noreferrer">Github</a>
+            <a className="hover:text-slate-600 transition-colors" href="https://www.linkedin.com/in/wathila-ranaweera-3558aa1b7/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            <a className="hover:text-slate-600 transition-colors" href="https://github.com/onel1234/Kapruka-challenge" target="_blank" rel="noopener noreferrer">Code</a>
+          </div>
+        </div>
+      </div>
 
-      {/* Footer */}
-      <footer className="bg-surface-cream w-full py-8 mt-auto flex flex-col md:flex-row justify-between items-center gap-4 px-margin-mobile md:px-margin-desktop z-20 relative">
-        <div className="font-label-sm text-label-sm text-on-background">
-          © 2024 Kapruka. Sri Lanka&apos;s largest e-commerce store.
-        </div>
-        <div className="flex gap-4">
-          <a className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
-          <a className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
-          <a className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Contact Us</a>
-        </div>
-      </footer>
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setIsModalOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
+              className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#fdd818] to-orange-400" />
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+              
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[28px]">robot_2</span>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">About Kavi</h2>
+                  <p className="text-slate-500 text-sm font-medium">Your Personal Gift Concierge</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-slate-700 leading-relaxed">
+                <p>
+                  Kavi is an AI-powered shopping assistant exclusive to Kapruka. She is designed to make gifting effortless and personalized.
+                </p>
+                
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#fdd818] text-[20px]">auto_awesome</span>
+                    What can Kavi do?
+                  </h3>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">check_circle</span>
+                      <span><strong>Smart Recommendations:</strong> Tell Kavi who the gift is for, and she'll suggest the perfect items.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">check_circle</span>
+                      <span><strong>Seamless Ordering:</strong> Add items to your cart and checkout effortlessly.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">check_circle</span>
+                      <span><strong>Personalized Bundles:</strong> Kavi can curate a cake, flowers, and a card together for a complete package.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <p>
+                  Simply type what you're looking for, and let Kavi handle the rest. Gifting has never been this simple!
+                </p>
+              </div>
+
+              <div className="mt-8">
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  Got it, thanks!
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
