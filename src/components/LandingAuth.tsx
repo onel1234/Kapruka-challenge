@@ -103,17 +103,17 @@ export default function LandingAuth() {
 
       {/* Floating Decorative Elements */}
       <div className="absolute inset-0 z-0 pointer-events-none hidden md:block">
-        <img alt="Cake" className="absolute top-[20%] left-[15%] w-24 h-24 object-contain opacity-40 floating-icon" src="https://lh3.googleusercontent.com/aida/AP1WRLvcqaeH0YYrJs0SSAfN6xnDnnOxS-hkLRcm_-l-LADBHnqfpiYzWLrTp6m1ehehYGjkkzuQBuAW54w09F-SIvGsG8xTZxpE4e_aP4KvjQD6Qlo5h5yEfBNApxxYqhwzO_WU4Vn6EW_oEVdsB2iCYFfEsD4169wKYuVyUz5EfGIXBcCpHlojtBvUtDkWW0rH6fgWUBaWCqiVUVXWp-wyMRPEunSMgANO3OgWpNHVSmiutN9gCdgtacocvMc" />
-        <img alt="Flower" className="absolute top-[60%] left-[10%] w-20 h-20 object-contain opacity-40 floating-icon-delayed" src="https://lh3.googleusercontent.com/aida/AP1WRLsiwTt9N-MI21ItZrT8L6Q5jIrZBO642JAB3BZ_fkXpKVwyzw99Na39qWd4GxR18ejYDTXkCgETYG9f0Zvf8n8_kzqlhw8gOFZm3jIwoJeNWzgyxwWquymdlEgty4VUcGN7RPp8_utE0P709H0w8VNUUVuPcQS-KfQTCgpQ2YhNKKHksbkjySQRpJYRo1EN9rjVfO5v_KDQbNfB08CUaL6YzoHtRkoeU6hkWH_ain6W4aXrLDBEnuoMg24" />
-        <img alt="Chocolate" className="absolute top-[30%] right-[15%] w-20 h-20 object-contain opacity-40 floating-icon" src="https://lh3.googleusercontent.com/aida/AP1WRLuvLVCFnzxkqv4vb9tHrUiILgW8_kDk1dp0gOg2bA6kd_yaw1BONVL1GQQoKxR7BCjQS5TCD08GXl3ICaF8HAX1VRePoQQfd2ehGMvFpNuG4een0jiDZD-95vWaDKfePIFu-Lzl8jCEfyOROwPBZh7rONiI5iHl_0UY8QUvfNVdQz4G9f-KMYY0wKEDD-UpY5i8Cr2EybYWg7VMPMGMuh2M902S7EKXuyBz50DPxcAwL2ssP_sP7p5_gA" />
-        <img alt="Food" className="absolute top-[70%] right-[10%] w-24 h-24 object-contain opacity-40 floating-icon-delayed" src="https://lh3.googleusercontent.com/aida/AP1WRLug7K-B0-3QTdAPYtfK0voa8YYVXhRe09eQbTwjZyyYSmHWDkjCq2v49_XIbndQqpW3v90WY5f25OC7sscb-8Tv5RjYSx5WrEHcfNwYBBbVbWQXPSu5WkWbShu9caPLprkHLR_80CMQ8to_F0MzuArAcXAPGFquzYkeDmBRRfcC6UvkMjKe5zaPdTUGwWLaIC2E_ie_It2EhRBqik9DNuDGF6C_nylJ3gnudHafJwi9M46YCB0tDYvydNo" />
+        <img alt="Cake" className="absolute top-[20%] left-[15%] w-24 h-24 object-contain opacity-40 floating-icon" src="/cake.png" />
+        <img alt="Flower" className="absolute top-[60%] left-[10%] w-20 h-20 object-contain opacity-40 floating-icon-delayed" src="/flower.png" />
+        <img alt="Chocolate" className="absolute top-[30%] right-[15%] w-20 h-20 object-contain opacity-40 floating-icon" src="/chocolate.png" />
+        <img alt="Food" className="absolute top-[70%] right-[10%] w-24 h-24 object-contain opacity-40 floating-icon-delayed" src="/food.png" />
       </div>
 
       {/* TopNavBar */}
       <nav className="bg-white fixed top-0 w-full flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 z-50">
         <div className="flex items-center">
           <a className="font-display-sm text-display-sm font-bold text-primary hover:opacity-80 transition-opacity hover:scale-[1.02] transition-transform duration-300 block w-32" href="#">
-            <img alt="Kapruka Logo" className="w-full h-auto object-contain brightness-0" src="https://lh3.googleusercontent.com/aida/AP1WRLuIyT0-GCNbk_TYUr3f126577Qwihtoifw7UsUPtVyZcinuSbtYCb6R_WVce4tgTpydLFxlD_SXhI177Mm-qbJJV-2XGhRTgx-VQCADDhx8Idge87szQQdRuKBPPGb3zdi57_QLfGuRHImBPr2QIGWciOx_3AFokt9iMsryA1XSWfCf3xlAEjbHh3dqu1pn552sarydnleDz-9vwXaqT2G8y9_b6PFZPSgTWuOmUKGrx2_qOf7kDUGpCC0" />
+            <img alt="Kapruka Logo" className="w-full h-auto object-contain brightness-0" src="/logo.png" />
           </a>
         </div>
         <div className="hidden md:flex items-center space-x-6 font-body-md text-body-md"></div>
