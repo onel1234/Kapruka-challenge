@@ -337,6 +337,8 @@ export default function Home() {
   });
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // Snapshot of input text at the moment listening starts
+  const baseTextRef = useRef<string>("");
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
 
@@ -364,17 +366,20 @@ export default function Home() {
     recognition.continuous = false;
     recognition.interimResults = true;
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => {
+      // Capture whatever was already typed before we started listening
+      baseTextRef.current = input.trimEnd();
+      setIsListening(true);
+    };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+      // Rebuild the FULL transcript from scratch each time to avoid duplication
+      let fullTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript;
       }
-      setInput((prev) => {
-        const base = prev.trimEnd();
-        return base ? `${base} ${transcript}` : transcript;
-      });
+      const base = baseTextRef.current;
+      setInput(base ? `${base} ${fullTranscript}` : fullTranscript);
     };
 
     recognition.onerror = () => {
