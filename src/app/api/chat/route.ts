@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { checkDelivery, searchProducts, trackOrder } from "@/lib/kapruka";
+import { checkDelivery, createOrder, listDeliveryCities, searchProducts, trackOrder } from "@/lib/kapruka";
 import { buildGiftAgentInsights } from "@/lib/gift-agents";
 import { callOpenRouter, extractJsonObject } from "@/lib/openrouter";
-import type { ChatMessage, DetailLevel, EmojiMode, GiftAgentInsights, OrderTracking, Product, ResponsePreferences, ResponseTone } from "@/lib/types";
+import type { ChatMessage, CheckoutPayload, DetailLevel, EmojiMode, GiftAgentInsights, OrderTracking, Product, ResponsePreferences, ResponseTone } from "@/lib/types";
 import { getActor, getOwnedConversation } from "@/lib/actor";
 import { prisma } from "@/lib/db";
 
@@ -30,6 +30,25 @@ type ShoppingPlan = {
   delivery_address?: string | null;
   gift_message?: string | null;
   delivery_instructions?: string | null;
+};
+
+type CartItemSnapshot = {
+  product_id: string;
+  quantity: number;
+  icing_text?: string | null;
+};
+
+type CheckoutSuccess = {
+  summary: {
+    items_total: number;
+    delivery_fee: number;
+    addons_total: number;
+    currency: string;
+    grand_total: number;
+  };
+  checkout_url: string;
+  expires_at: string;
+  order_ref: string;
 };
 
 const DEFAULT_RESPONSE_PREFERENCES: ResponsePreferences = {
@@ -614,6 +633,157 @@ function hasTrackingIntent(message: string) {
   );
 }
 
+function hasConfirmationIntent(message: string) {
+  return /^\s*(yes|yeah|yep|yup|ok|okay|sure|proceed|confirm|go ahead|place(\s+the)?\s+order|place\s+it|do\s+it|let's\s+do\s+it|place order|create order|order now|checkout now|pay now|confirm(\s+order)?|sounds good|perfect|great|absolutely|definitely|of course)\s*[!.]*\s*$/i.test(
+    message,
+  );
+}
+
+function hasCartAddedIntent(message: string) {
+  return /^\s*(add(ed)?|added to cart|yes add|add it|add (this|that)|add (to )?cart|i (want|take|choose|pick|go with|would like) (the )?(first|second|third|fourth|1st|2nd|3rd|4th|this|that|option|one)|put (it|this|that) in (the )?cart)\s*[!.]*\s*$/i.test(
+    message,
+  );
+}
+
+function hasAllCheckoutFields(plan: ShoppingPlan, cart: CartItemSnapshot[]): boolean {
+  return (
+    cart.length > 0 &&
+    Boolean(plan.recipient_name?.trim()) &&
+    Boolean(plan.recipient_phone?.trim()) &&
+    Boolean(plan.sender_name?.trim()) &&
+    Boolean(plan.delivery_address?.trim() || plan.city?.trim()) &&
+    Boolean(plan.city?.trim()) &&
+    Boolean(plan.delivery_date?.trim())
+  );
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/[^\d.-]/g, ""));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function coerceCheckoutSuccess(value: unknown): CheckoutSuccess | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as {
+    summary?: Record<string, unknown>;
+    checkout_url?: unknown;
+    checkoutUrl?: unknown;
+    url?: unknown;
+    expires_at?: unknown;
+    expiresAt?: unknown;
+    order_ref?: unknown;
+    orderRef?: unknown;
+  };
+  const summary = candidate.summary;
+  const checkoutUrl = candidate.checkout_url ?? candidate.checkoutUrl ?? candidate.url;
+  if (!summary || typeof checkoutUrl !== "string") return null;
+  const itemsTotal = toNumber(summary.items_total ?? summary.itemsTotal);
+  const deliveryFee = toNumber(summary.delivery_fee ?? summary.deliveryFee ?? summary.shipping_price);
+  const addonsTotal = toNumber(summary.addons_total ?? summary.addonsTotal) ?? 0;
+  const grandTotal = toNumber(summary.grand_total ?? summary.grandTotal ?? summary.total);
+  const currency = typeof summary.currency === "string" ? summary.currency : "LKR";
+  if (itemsTotal === null || deliveryFee === null || grandTotal === null) return null;
+  return {
+    summary: { items_total: itemsTotal, delivery_fee: deliveryFee, addons_total: addonsTotal, currency, grand_total: grandTotal },
+    checkout_url: checkoutUrl,
+    expires_at: typeof candidate.expires_at === "string" ? candidate.expires_at : typeof candidate.expiresAt === "string" ? candidate.expiresAt : new Date().toISOString(),
+    order_ref: typeof candidate.order_ref === "string" ? candidate.order_ref : typeof candidate.orderRef === "string" ? candidate.orderRef : "Pending",
+  };
+}
+
+function findCheckoutSuccessResult(value: unknown, depth = 0): CheckoutSuccess | null {
+  if (depth > 8 || value == null) return null;
+  if (typeof value === "string") {
+    try { return findCheckoutSuccessResult(JSON.parse(value), depth + 1); } catch { return null; }
+  }
+  const coerced = coerceCheckoutSuccess(value);
+  if (coerced) return coerced;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findCheckoutSuccessResult(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof value === "object") {
+    for (const nested of Object.values(value)) {
+      const found = findCheckoutSuccessResult(nested, depth + 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+async function resolveDeliveryCity(city: string, address: string) {
+  type CityMatch = { name: string; aliases?: string[] };
+  type CityLookup = { cities?: CityMatch[]; total_matched?: number };
+  function asCityLookup(value: unknown): CityLookup {
+    if (value && typeof value === "object" && Array.isArray((value as CityLookup).cities)) return value as CityLookup;
+    return { cities: [] };
+  }
+  function normalize(v: string) { return v.toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function addressSearchTerms(addr: string) {
+    return addr.split(",").map((p) => p.trim()).filter((p) => /^[a-zA-Z ]{3,}$/.test(p)).reverse();
+  }
+  const lookup = asCityLookup(await listDeliveryCities(city));
+  const cityMatches = lookup.cities ?? [];
+  const exactCity = cityMatches.find((match) => normalize(match.name) === normalize(city));
+  if (exactCity) return { city: exactCity.name, suggestions: cityMatches.map((m) => m.name) };
+  if (cityMatches.length === 1) return { city: cityMatches[0].name, suggestions: cityMatches.map((m) => m.name) };
+  for (const term of addressSearchTerms(address)) {
+    const addrLookup = asCityLookup(await listDeliveryCities(term));
+    const addrMatches = addrLookup.cities ?? [];
+    if (addrMatches.length === 1) return { city: addrMatches[0].name, suggestions: [...new Set([...addrMatches.map((m) => m.name), ...cityMatches.map((m) => m.name)])] };
+  }
+  return { city: null, suggestions: cityMatches.map((m) => m.name).slice(0, 12) };
+}
+
+async function attemptAutoCheckout(params: {
+  plan: ShoppingPlan;
+  cart: CartItemSnapshot[];
+  actor: Awaited<ReturnType<typeof getActor>>;
+  conversationId: string | null;
+}): Promise<{ checkout: CheckoutSuccess; normalizedCity: string } | { error: string }> {
+  const { plan, cart, actor, conversationId } = params;
+  if (!actor) return { error: "Not authenticated" };
+  const city = plan.city ?? "";
+  const address = plan.delivery_address ?? city;
+  const resolved = await resolveDeliveryCity(city, address);
+  if (!resolved.city) return { error: `Delivery city "${city}" is ambiguous. Try being more specific.` };
+  const payload: CheckoutPayload = {
+    cart: cart.map((item) => ({ product_id: item.product_id, quantity: item.quantity, icing_text: item.icing_text ?? null })),
+    recipient: { name: plan.recipient_name!, phone: plan.recipient_phone! },
+    delivery: { address: address || resolved.city, city: resolved.city, location_type: "house", date: plan.delivery_date!, instructions: plan.delivery_instructions ?? null },
+    sender: { name: plan.sender_name!, anonymous: false },
+    gift_message: plan.gift_message ?? null,
+    currency: "LKR",
+  };
+  try {
+    const result = await createOrder(payload);
+    const checkout = findCheckoutSuccessResult(result);
+    if (!checkout) return { error: "Order created but checkout link format was unexpected." };
+    const ownedConversation = conversationId ? await getOwnedConversation(conversationId, actor) : null;
+    await prisma.checkoutRecord.create({
+      data: {
+        conversationId: ownedConversation?.id,
+        ...(actor.type === "user" ? { userId: actor.userId } : { guestSessionId: actor.guestSessionId }),
+        orderRef: checkout.order_ref,
+        checkoutUrl: checkout.checkout_url,
+        summary: checkout.summary,
+        expiresAt: checkout.expires_at ? new Date(checkout.expires_at) : null,
+        rawResult: JSON.parse(JSON.stringify(result)),
+      },
+    });
+    return { checkout, normalizedCity: resolved.city };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Checkout failed." };
+  }
+}
+
 function extractTrackingOrderNumber(message: string) {
   if (!hasTrackingIntent(message)) return null;
   const candidates = message.match(/[a-z0-9][a-z0-9-]{3,39}/gi) ?? [];
@@ -1067,6 +1237,7 @@ export async function POST(request: Request) {
       conversationId?: string | null;
       cartSnapshot?: unknown;
       responsePreferences?: unknown;
+      cartItemAdded?: boolean;
     };
     const message = body.message?.trim();
 
@@ -1109,18 +1280,31 @@ export async function POST(request: Request) {
       },
     });
 
+    // Handle cart-item-added notification: bot acknowledges and prompts for details
+    const cartSnapshotItems = Array.isArray(body.cartSnapshot) ? (body.cartSnapshot as CartItemSnapshot[]) : [];
+    const cartAdded = body.cartItemAdded === true && cartSnapshotItems.length > 0;
+
     const trackingOrderNumber = extractTrackingOrderNumber(message);
 
     if (trackingOrderNumber) {
-      const reply = trackingOrderNumber.startsWith("ORD-")
-        ? buildMissingTrackingReply(replyLanguage)
-        : await trackOrder(trackingOrderNumber)
-            .then((tracking) =>
-              typeof tracking === "string"
-                ? tracking.replace(/^Error:\s*/i, "").trim() || "I could not find tracking for that order number."
-                : buildTrackingReply(tracking as OrderTracking),
-            )
-            .catch((error) => (error instanceof Error ? error.message : "Order tracking failed."));
+      let trackingResult: OrderTracking | null = null;
+      let reply: string;
+
+      if (trackingOrderNumber.startsWith("ORD-")) {
+        reply = buildMissingTrackingReply(replyLanguage);
+      } else {
+        try {
+          const rawTracking = await trackOrder(trackingOrderNumber);
+          if (typeof rawTracking === "string") {
+            reply = rawTracking.replace(/^Error:\s*/i, "").trim() || "I could not find tracking for that order number.";
+          } else {
+            trackingResult = rawTracking as OrderTracking;
+            reply = buildTrackingReply(trackingResult);
+          }
+        } catch (error) {
+          reply = error instanceof Error ? error.message : "Order tracking failed.";
+        }
+      }
 
       await prisma.$transaction([
         prisma.message.create({
@@ -1131,6 +1315,7 @@ export async function POST(request: Request) {
             metadata: {
               order_tracking: {
                 order_number: trackingOrderNumber,
+                tracking: trackingResult,
               },
             },
           },
@@ -1150,6 +1335,7 @@ export async function POST(request: Request) {
         delivery: null,
         plan: { language: replyLanguage ?? "english" },
         conversationId: conversation.id,
+        trackingResult,
       });
     }
 
@@ -1326,15 +1512,86 @@ export async function POST(request: Request) {
       }),
     ]);
 
-    const checkoutPrompt = buildCheckoutCollectionPrompt({
+    // ── Auto-checkout: fire when all fields are present and user confirms ──
+    let inChatCheckoutResult: CheckoutSuccess | null = null;
+    let inChatCheckoutError: string | null = null;
+    let allFieldsReady = false;
+
+    // Check if we have all fields with the accumulated checkout state
+    // We look at the plan (current turn extracted) merged with what the frontend sent
+    const mergedPlan = {
+      ...plan,
+      recipient_name: plan.recipient_name ?? null,
+      recipient_phone: plan.recipient_phone ?? null,
+      sender_name: plan.sender_name ?? null,
+      delivery_address: plan.delivery_address ?? null,
+      city: plan.city ?? null,
+      delivery_date: plan.delivery_date ?? null,
+    };
+    allFieldsReady = hasAllCheckoutFields(mergedPlan, cartSnapshotItems);
+
+    if (allFieldsReady && (hasConfirmationIntent(message) || cartAdded && cartSnapshotItems.length > 0)) {
+      // Only auto-checkout on confirmation intent (not just cart add)
+      if (hasConfirmationIntent(message)) {
+        const autoResult = await attemptAutoCheckout({
+          plan: mergedPlan,
+          cart: cartSnapshotItems,
+          actor,
+          conversationId: conversation.id,
+        });
+        if ("checkout" in autoResult) {
+          inChatCheckoutResult = autoResult.checkout;
+        } else {
+          inChatCheckoutError = autoResult.error;
+        }
+      }
+    }
+
+    const checkoutPrompt = inChatCheckoutResult ? null : buildCheckoutCollectionPrompt({
       plan,
       cartSnapshot: body.cartSnapshot,
       preferences: responsePreferences,
     });
-    const finalReply = checkoutPrompt ? reply + checkoutPrompt : reply;
 
-    // Re-save the assistant message with the checkout prompt appended
-    if (checkoutPrompt) {
+    // Build the final reply — if cart was just added, prepend a warm acknowledgment prompt
+    let cartAddedPrompt = "";
+    if (cartAdded && !inChatCheckoutResult) {
+      const productName = cartSnapshotItems.length > 0 ? ` (${cartSnapshotItems.length} item${cartSnapshotItems.length > 1 ? "s" : ""}  in cart)` : "";
+      if (replyLanguage === "sinhala") {
+        cartAddedPrompt = `\n\nඅපූරු තේරීමක්! 🎉 Cart එකේ ${productName} add කළා. Gift eka complete karanna recipient name, phone, delivery address, date, gift message kiyanna."`;
+      } else if (replyLanguage === "singlish") {
+        cartAddedPrompt = `\n\nApura theermak! 🎉 Cart ekata add kala${productName}. Gift eka send karanna recipient name, phone, delivery address, date, gift message denna puluwan da?`;
+      } else if (replyLanguage === "tamil") {
+        cartAddedPrompt = `\n\nஅருமையான தேர்வு! 🎉 Cart-ல் சேர்க்கப்பட்டது${productName}. Recipient பெயர், தொலைபேசி, delivery முகவரி, தேதி, gift message சொல்லுங்கள்.`;
+      } else if (replyLanguage === "tanglish") {
+        cartAddedPrompt = `\n\nNalla choice! 🎉 Cart-la add panninom${productName}. Gift anuppa recipient name, phone, delivery address, date, gift message sollunga.`;
+      } else {
+        const useEmojis = responsePreferences.emojiMode !== "none";
+        cartAddedPrompt = useEmojis
+          ? `\n\nGreat selection! 🎉✨ I've added it to your cart${productName}. To send this gift, could you share the recipient's full name, phone number, delivery address and city, preferred delivery date, and a gift message? 🎁💝`
+          : `\n\nGreat selection! I've added it to your cart${productName}. To send this gift, could you share the recipient's full name, phone number, delivery address and city, preferred delivery date, and a gift message?`;
+      }
+    }
+
+    // Add checkout success message to the reply
+    let checkoutSuccessPrompt = "";
+    if (inChatCheckoutResult) {
+      const fmt = (n: number) => new Intl.NumberFormat("en-LK", { style: "currency", currency: inChatCheckoutResult!.summary.currency, maximumFractionDigits: 0 }).format(n);
+      const useEmojis = responsePreferences.emojiMode !== "none";
+      checkoutSuccessPrompt = useEmojis
+        ? `\n\n🎉 Your order is ready! Order ref: ${inChatCheckoutResult.order_ref}. Total: ${fmt(inChatCheckoutResult.summary.grand_total)} (items: ${fmt(inChatCheckoutResult.summary.items_total)} + delivery: ${fmt(inChatCheckoutResult.summary.delivery_fee)}). Click the Pay Now button below to complete payment. After paying, save the Kapruka order number from your confirmation email — you can track it right here in chat! 📦✨`
+        : `\n\nYour order is ready! Order ref: ${inChatCheckoutResult.order_ref}. Total: ${fmt(inChatCheckoutResult.summary.grand_total)} (items: ${fmt(inChatCheckoutResult.summary.items_total)} + delivery: ${fmt(inChatCheckoutResult.summary.delivery_fee)}). Click the Pay Now button below to complete payment. After paying, save the Kapruka order number from your confirmation email to track it here in chat.`;
+    }
+
+    if (inChatCheckoutError) {
+      checkoutSuccessPrompt = `\n\nI tried to place the order but hit a snag: ${inChatCheckoutError} Please check the details and try again, or use the cart icon to proceed manually.`;
+    }
+
+    const finalReply = reply + cartAddedPrompt + (checkoutPrompt ?? "") + checkoutSuccessPrompt;
+
+    // Re-save the assistant message with all appended content
+    const hasAppended = cartAddedPrompt || checkoutPrompt || checkoutSuccessPrompt;
+    if (hasAppended) {
       await prisma.message.updateMany({
         where: { conversationId: conversation.id, role: "assistant", content: reply },
         data: { content: finalReply },
@@ -1348,6 +1605,8 @@ export async function POST(request: Request) {
       plan,
       agentInsights,
       conversationId: conversation.id,
+      checkoutResult: inChatCheckoutResult,
+      allFieldsReady,
       extractedCheckout: {
         recipientName: plan.recipient_name ?? null,
         recipientPhone: plan.recipient_phone ?? null,

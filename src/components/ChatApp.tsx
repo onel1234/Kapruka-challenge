@@ -63,6 +63,8 @@ type CheckoutSuccess = {
   order_ref: string;
 };
 
+type InChatCheckoutResult = CheckoutSuccess;
+
 type ConversationSummary = {
   id: string;
   title: string;
@@ -335,6 +337,12 @@ export default function Home() {
     emojiMode: "expressive",
     detailLevel: "balanced",
   });
+  // In-chat rich result state keyed by message ID
+  const [inChatCheckoutByMsgId, setInChatCheckoutByMsgId] = useState<Record<string, InChatCheckoutResult>>({});
+  const [inChatTrackingByMsgId, setInChatTrackingByMsgId] = useState<Record<string, OrderTracking>>({});
+  const [allFieldsReady, setAllFieldsReady] = useState(false);
+  // Previous cart length to detect additions
+  const prevCartLengthRef = useRef<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   // Snapshot of input text at the moment listening starts
@@ -507,11 +515,19 @@ export default function Home() {
     setDelivery(conversation.lastDelivery ?? null);
     setAgentInsights(conversation.agentInsights ?? null);
     setCart([]);
+    // Clear in-chat results when switching conversations
+    setInChatCheckoutByMsgId({});
+    setInChatTrackingByMsgId({});
+    setAllFieldsReady(false);
   }
 
   async function sendMessage(messageText?: string) {
     const content = (messageText ?? input).trim();
     if (!content || isSending) return;
+
+    // Detect if a cart item was added since the last message
+    const cartItemAdded = cart.length > prevCartLengthRef.current;
+    prevCartLengthRef.current = cart.length;
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -534,6 +550,7 @@ export default function Home() {
         conversationId,
         cartSnapshot: cart,
         responsePreferences,
+        cartItemAdded,
       };
       const chatRequest = () =>
         fetch("/api/chat", {
@@ -559,11 +576,32 @@ export default function Home() {
         content: data.reply,
         createdAt: new Date().toISOString(),
       };
+      const assistantMsgId = assistantMessage.id;
       setMessages([...nextMessages, assistantMessage]);
       setConversationId(data.conversationId ?? conversationId);
       setProducts(data.products ?? []);
       setDelivery(data.delivery ?? null);
       setAgentInsights(data.agentInsights ?? null);
+
+      // Handle in-chat checkout result
+      if (data.checkoutResult) {
+        const cs = normalizeCheckoutSuccess(data.checkoutResult);
+        if (cs) {
+          setInChatCheckoutByMsgId((prev) => ({ ...prev, [assistantMsgId]: cs }));
+          // Update the cart modal checkout success too for consistency
+          setCheckoutSuccess(cs);
+        }
+      }
+
+      // Handle in-chat tracking result
+      if (data.trackingResult) {
+        setInChatTrackingByMsgId((prev) => ({ ...prev, [assistantMsgId]: data.trackingResult as OrderTracking }));
+      }
+
+      // Update allFieldsReady from API
+      if (typeof data.allFieldsReady === "boolean") {
+        setAllFieldsReady(data.allFieldsReady);
+      }
       if (data.agentInsights) {
         try {
           localStorage.setItem("kapruka_agent_insights", JSON.stringify(data.agentInsights));
@@ -642,6 +680,7 @@ export default function Home() {
 
   function addToCart(product: Product) {
     setIsSidebarOpen(true);
+    let isNewItem = false;
     setCart((current) => {
       const existing = current.find((item) => item.product.id === product.id);
       if (existing) {
@@ -649,8 +688,16 @@ export default function Home() {
           item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
         );
       }
+      isNewItem = true;
       return [...current, { product, quantity: 1 }];
     });
+    // Auto-send a bot acknowledgment when a new product is added
+    if (isNewItem) {
+      setTimeout(() => {
+        prevCartLengthRef.current = cart.length;
+        void sendMessage(`I’d like to add ${product.name} to my order`);
+      }, 80);
+    }
   }
 
   function updateQuantity(productId: string, change: number) {
@@ -952,8 +999,11 @@ export default function Home() {
                <p className="mt-2 text-sm sm:text-base text-[#6c5d4a]">I&apos;m Kavi, your Kapruka gift concierge.</p>
             </div>
 <div className="space-y-6">
-                {messages.map((message, idx) => {
+                     
+              {messages.map((message, idx) => {
                   const isLastAssistantMessage = message.role === "assistant" && idx === messages.length - 1;
+                  const inChatCheckout = inChatCheckoutByMsgId[message.id];
+                  const inChatTracking = inChatTrackingByMsgId[message.id];
                   return (
                   <div key={message.id} className={`flex flex-col ${message.role === 'assistant' ? 'items-start' : 'items-end'}`}>
                     <article
@@ -965,7 +1015,103 @@ export default function Home() {
                     >
                       <p className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
                     </article>
-                    {isLastAssistantMessage && products.length > 0 && (
+
+                    {/* Rich in-chat checkout card */}
+                    {inChatCheckout && (
+                      <div className="mt-3 w-full max-w-[420px] rounded-xl border border-[#c6e0d8] bg-gradient-to-br from-[#f0faf6] to-[#e8f7f1] shadow-md overflow-hidden">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-[#1f4f4a] text-white">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                            <CheckCircle2 size={18} className="text-white" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-white/70">Order Created</p>
+                            <p className="text-sm font-semibold">Ready to pay!</p>
+                          </div>
+                          <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white/90">{inChatCheckout.order_ref}</span>
+                        </div>
+                        <div className="px-4 py-3 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[#5a7a72]">Items total</span>
+                            <span className="font-semibold text-[#1d1a16]">{formatMoney(inChatCheckout.summary.items_total, inChatCheckout.summary.currency)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[#5a7a72]">Delivery fee</span>
+                            <span className="font-semibold text-[#1d1a16]">{formatMoney(inChatCheckout.summary.delivery_fee, inChatCheckout.summary.currency)}</span>
+                          </div>
+                          <div className="flex items-center justify-between border-t border-[#c6e0d8] pt-2">
+                            <span className="text-sm font-bold text-[#1d1a16]">Grand Total</span>
+                            <span className="text-lg font-bold text-[#1f4f4a]">{formatMoney(inChatCheckout.summary.grand_total, inChatCheckout.summary.currency)}</span>
+                          </div>
+                        </div>
+                        <div className="px-4 pb-3">
+                          <a
+                            href={inChatCheckout.checkout_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#cc2f2f] font-semibold text-white shadow-sm transition hover:bg-[#a92727] active:scale-95"
+                          >
+                            <ShoppingBag size={16} />
+                            Pay Now on Kapruka
+                            <ExternalLink size={14} className="opacity-70" />
+                          </a>
+                          <p className="mt-2 text-center text-[10px] text-[#6b8f87]">
+                            Expires {new Date(inChatCheckout.expires_at).toLocaleString("en-LK")} · Save order number from email to track
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rich in-chat tracking card */}
+                    {inChatTracking && (
+                      <div className="mt-3 w-full max-w-[420px] rounded-xl border border-[#e1cfaf] bg-white shadow-md overflow-hidden">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-[#1d1a16] text-white">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
+                            <PackageCheck size={16} className="text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold uppercase tracking-wider text-white/60">Order Status</p>
+                            <p className="text-sm font-semibold truncate">{inChatTracking.status_display ?? inChatTracking.status ?? "Status unavailable"}</p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs font-mono font-semibold">{inChatTracking.order_number ?? ""}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 px-4 py-3 text-xs">
+                          <div>
+                            <p className="text-[#a68f70]">Delivery date</p>
+                            <p className="mt-0.5 font-semibold text-[#1d1a16]">{inChatTracking.delivery_date ?? "Not set"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[#a68f70]">Amount</p>
+                            <p className="mt-0.5 font-semibold text-[#1d1a16]">{inChatTracking.amount ?? "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[#a68f70]">Recipient</p>
+                            <p className="mt-0.5 truncate font-semibold text-[#1d1a16]">{inChatTracking.recipient?.name ?? "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[#a68f70]">City</p>
+                            <p className="mt-0.5 truncate font-semibold text-[#1d1a16]">{inChatTracking.recipient?.city ?? "—"}</p>
+                          </div>
+                        </div>
+                        {inChatTracking.progress && inChatTracking.progress.length > 0 && (
+                          <div className="border-t border-[#f0e4cc] px-4 py-3">
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#a68f70]">Progress</p>
+                            <div className="space-y-2">
+                              {inChatTracking.progress.slice(0, 5).map((step, i) => (
+                                <div key={i} className="flex gap-2 text-xs">
+                                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f4f4a]" />
+                                  <div>
+                                    <p className="font-semibold text-[#1d1a16]">{step.step ?? "Update"}</p>
+                                    {step.timestamp && <p className="text-[#a68f70]">{step.timestamp}</p>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {isLastAssistantMessage && products.length > 0 && !inChatCheckout && (
                       <div className="mt-4 flex gap-3 w-full overflow-x-auto pb-4 pl-1 scrollbar-hide">
                          {products.slice(0, 4).map((product, pIdx) => (
                            <div key={product.id} className="min-w-[220px] w-[220px] shrink-0 overflow-hidden rounded-lg border border-[#e1cfaf] bg-white shadow-sm flex flex-col transition hover:shadow-md">
@@ -1001,6 +1147,29 @@ export default function Home() {
                            <ChevronRight size={28} className="mb-2" />
                            <span className="text-sm font-semibold">View all {products.length}</span>
                          </button>
+                      </div>
+                    )}
+
+                    {/* Confirm & Place Order chip — shown on last assistant message when all fields ready */}
+                    {isLastAssistantMessage && allFieldsReady && !inChatCheckout && cart.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void sendMessage("Yes, please place the order")}
+                          disabled={isSending}
+                          className="flex items-center gap-2 rounded-full border-2 border-[#1f4f4a] bg-[#1f4f4a] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#173d39] active:scale-95 disabled:opacity-50"
+                        >
+                          <Check size={15} />
+                          Confirm &amp; Place Order
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsCheckoutModalOpen(true)}
+                          className="flex items-center gap-2 rounded-full border border-[#d8c5a7] bg-white px-4 py-2 text-sm font-semibold text-[#5f503d] shadow-sm transition hover:border-[#1f4f4a] hover:text-[#1f4f4a]"
+                        >
+                          <SlidersHorizontal size={14} />
+                          Edit details first
+                        </button>
                       </div>
                     )}
                   </div>
