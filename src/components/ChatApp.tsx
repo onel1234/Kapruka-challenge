@@ -687,7 +687,6 @@ export default function Home() {
   }
 
   function addToCart(product: Product) {
-    setIsSidebarOpen(true);
     let isNewItem = false;
     setCart((current) => {
       const existing = current.find((item) => item.product.id === product.id);
@@ -699,21 +698,28 @@ export default function Home() {
       isNewItem = true;
       return [...current, { product, quantity: 1 }];
     });
-    // Auto-send a bot acknowledgment when a new product is added.
-    // Use double rAF to let React flush the state update (and update cartRef) before sending.
-    if (isNewItem) {
-      cartAddedNotifyRef.current = true;
-      const tryNotify = (attemptsLeft: number) => {
-        // Wait if a message is already in flight
-        if (isSendingRef.current) {
-          if (attemptsLeft > 0) setTimeout(() => tryNotify(attemptsLeft - 1), 300);
-          else cartAddedNotifyRef.current = false; // give up
-          return;
-        }
-        void sendMessage(`I'd like to add ${product.name} to my order`);
-      };
-      requestAnimationFrame(() => requestAnimationFrame(() => tryNotify(10)));
+    if (!isNewItem) return;
+    // Immediately push a bot ack into the chat — synchronous, no closures, guaranteed to fire
+    const useEmojis = responsePreferences.emojiMode !== "none";
+    const pname = product.name;
+    let ack: string;
+    if (selectedLanguage === "sinhala") {
+      ack = `Great selection! Cart ekata "${pname}" add kala. Gift eka ganinna recipient name, phone, delivery address, date, gift message kiyanna.`;
+    } else if (selectedLanguage === "singlish") {
+      ack = `Apura theermak! Cart ekata "${pname}" add kala. Gift eka send karanna recipient name, phone, delivery address, date, gift message denna.`;
+    } else if (selectedLanguage === "tamil") {
+      ack = `Arumai! "${pname}" cart-la serkkappattathu. Gift anuppa recipient name, phone, delivery address, date, gift message sollunga.`;
+    } else if (selectedLanguage === "tanglish") {
+      ack = `Nalla choice! "${pname}" cart-la add panninom. Gift anuppa recipient name, phone, delivery address, date, gift message sollunga.`;
+    } else if (useEmojis) {
+      ack = `Great selection! 🎉✨ I've added **"${pname}"** to your cart.\n\nTo send this gift, I'll need:\n- Recipient's full name & phone number\n- Delivery address and city\n- Preferred delivery date\n- A gift message for the card 🎁💝`;
+    } else {
+      ack = `Great selection! I've added "${pname}" to your cart. To send this gift, share the recipient's name, phone, delivery address and city, preferred date, and a gift message.`;
     }
+    setMessages((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), role: "assistant" as const, content: ack, createdAt: new Date().toISOString() },
+    ]);
   }
 
   function updateQuantity(productId: string, change: number) {
