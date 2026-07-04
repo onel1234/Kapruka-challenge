@@ -343,12 +343,20 @@ export default function Home() {
   const [allFieldsReady, setAllFieldsReady] = useState(false);
   // Boolean ref: set to true when a new product is added to cart, consumed by sendMessage
   const cartAddedNotifyRef = useRef<boolean>(false);
+  // Live cart ref — always tracks the latest cart state, safe to read from stale closures
+  const cartRef = useRef(cart);
+  // Live isSending ref — safe to read from stale closures
+  const isSendingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   // Snapshot of input text at the moment listening starts
   const baseTextRef = useRef<string>("");
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+
+  // Keep live refs in sync with state on every render
+  useEffect(() => { cartRef.current = cart; });
+  useEffect(() => { isSendingRef.current = isSending; });
 
   // Detect browser speech recognition support on mount
   useEffect(() => {
@@ -548,7 +556,7 @@ export default function Home() {
         history: messages,
         language: selectedLanguage,
         conversationId,
-        cartSnapshot: cart,
+        cartSnapshot: cartRef.current,  // always use the live cart, not the stale closure
         responsePreferences,
         cartItemAdded,
       };
@@ -692,14 +700,19 @@ export default function Home() {
       return [...current, { product, quantity: 1 }];
     });
     // Auto-send a bot acknowledgment when a new product is added.
-    // Use double rAF to let React flush the state update before sendMessage reads the cart.
+    // Use double rAF to let React flush the state update (and update cartRef) before sending.
     if (isNewItem) {
       cartAddedNotifyRef.current = true;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          void sendMessage(`I'd like to add ${product.name} to my order`);
-        });
-      });
+      const tryNotify = (attemptsLeft: number) => {
+        // Wait if a message is already in flight
+        if (isSendingRef.current) {
+          if (attemptsLeft > 0) setTimeout(() => tryNotify(attemptsLeft - 1), 300);
+          else cartAddedNotifyRef.current = false; // give up
+          return;
+        }
+        void sendMessage(`I'd like to add ${product.name} to my order`);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(() => tryNotify(10)));
     }
   }
 

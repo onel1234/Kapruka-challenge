@@ -1282,7 +1282,9 @@ export async function POST(request: Request) {
 
     // Handle cart-item-added notification: bot acknowledges and prompts for details
     const cartSnapshotItems = Array.isArray(body.cartSnapshot) ? (body.cartSnapshot as CartItemSnapshot[]) : [];
-    const cartAdded = body.cartItemAdded === true && cartSnapshotItems.length > 0;
+    // Detect cart-add via explicit flag OR via the auto-message text pattern (robust against stale closures)
+    const isCartAddMessage = /^I(?:'|'|')?d like to add .+ to my order$/i.test(message);
+    const cartAdded = isCartAddMessage || body.cartItemAdded === true;
 
     const trackingOrderNumber = extractTrackingOrderNumber(message);
 
@@ -1556,9 +1558,16 @@ export async function POST(request: Request) {
     // Build the final reply — if cart was just added, prepend a warm acknowledgment prompt
     let cartAddedPrompt = "";
     if (cartAdded && !inChatCheckoutResult) {
-      const productName = cartSnapshotItems.length > 0 ? ` (${cartSnapshotItems.length} item${cartSnapshotItems.length > 1 ? "s" : ""}  in cart)` : "";
+      // Extract product name from message text or fall back to cart count
+      const extractedProductName = isCartAddMessage
+        ? (message.match(/^I(?:'|'|')?d like to add (.+) to my order$/i)?.[1] ?? "")
+        : "";
+      const cartCountNote = cartSnapshotItems.length > 1 ? ` (${cartSnapshotItems.length} items in cart)` : "";
+      const productName = extractedProductName
+        ? ` — **${extractedProductName}**`
+        : cartCountNote;
       if (replyLanguage === "sinhala") {
-        cartAddedPrompt = `\n\nඅපූරු තේරීමක්! 🎉 Cart එකේ ${productName} add කළා. Gift eka complete karanna recipient name, phone, delivery address, date, gift message kiyanna."`;
+        cartAddedPrompt = `\n\nඅපූරු තේරීමක්! 🎉 Cart එකට add කළා${productName ? ` (${extractedProductName || "item"})` : ""}. Gift eka complete karanna recipient name, phone, delivery address, date, gift message kiyanna.`;
       } else if (replyLanguage === "singlish") {
         cartAddedPrompt = `\n\nApura theermak! 🎉 Cart ekata add kala${productName}. Gift eka send karanna recipient name, phone, delivery address, date, gift message denna puluwan da?`;
       } else if (replyLanguage === "tamil") {
@@ -1568,8 +1577,8 @@ export async function POST(request: Request) {
       } else {
         const useEmojis = responsePreferences.emojiMode !== "none";
         cartAddedPrompt = useEmojis
-          ? `\n\nGreat selection! 🎉✨ I've added it to your cart${productName}. To send this gift, could you share the recipient's full name, phone number, delivery address and city, preferred delivery date, and a gift message? 🎁💝`
-          : `\n\nGreat selection! I've added it to your cart${productName}. To send this gift, could you share the recipient's full name, phone number, delivery address and city, preferred delivery date, and a gift message?`;
+          ? `\n\nGreat selection! 🎉✨ I've added **${extractedProductName || "it"}** to your cart${cartCountNote}. To complete this gift, could you share:\n• Recipient's full name & phone number\n• Delivery address and city\n• Preferred delivery date\n• A gift message for the card 🎁💝`
+          : `\n\nGreat selection! I've added ${extractedProductName || "it"} to your cart${cartCountNote}. To complete this gift, could you share the recipient's full name, phone number, delivery address and city, preferred delivery date, and a gift message?`;
       }
     }
 
