@@ -341,8 +341,8 @@ export default function Home() {
   const [inChatCheckoutByMsgId, setInChatCheckoutByMsgId] = useState<Record<string, InChatCheckoutResult>>({});
   const [inChatTrackingByMsgId, setInChatTrackingByMsgId] = useState<Record<string, OrderTracking>>({});
   const [allFieldsReady, setAllFieldsReady] = useState(false);
-  // Previous cart length to detect additions
-  const prevCartLengthRef = useRef<number>(0);
+  // Boolean ref: set to true when a new product is added to cart, consumed by sendMessage
+  const cartAddedNotifyRef = useRef<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   // Snapshot of input text at the moment listening starts
@@ -525,9 +525,9 @@ export default function Home() {
     const content = (messageText ?? input).trim();
     if (!content || isSending) return;
 
-    // Detect if a cart item was added since the last message
-    const cartItemAdded = cart.length > prevCartLengthRef.current;
-    prevCartLengthRef.current = cart.length;
+    // Consume the cartItemAdded flag set by addToCart
+    const cartItemAdded = cartAddedNotifyRef.current;
+    cartAddedNotifyRef.current = false;
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -691,12 +691,15 @@ export default function Home() {
       isNewItem = true;
       return [...current, { product, quantity: 1 }];
     });
-    // Auto-send a bot acknowledgment when a new product is added
+    // Auto-send a bot acknowledgment when a new product is added.
+    // Use double rAF to let React flush the state update before sendMessage reads the cart.
     if (isNewItem) {
-      setTimeout(() => {
-        prevCartLengthRef.current = cart.length;
-        void sendMessage(`I’d like to add ${product.name} to my order`);
-      }, 80);
+      cartAddedNotifyRef.current = true;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          void sendMessage(`I'd like to add ${product.name} to my order`);
+        });
+      });
     }
   }
 
